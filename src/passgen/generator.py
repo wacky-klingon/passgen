@@ -8,6 +8,58 @@ from importlib.resources import files
 from .policy import SYMBOLS, Policy
 
 SET_NAMES = ("people", "places", "things")
+LOOKALIKES = {
+    "a": "4@",
+    "b": "8",
+    "e": "3",
+    "g": "9",
+    "i": "1!",
+    "l": "1",
+    "o": "0",
+    "s": "5$",
+    "t": "7+",
+    "z": "2",
+}
+
+
+def replacements(letter: str, policy: Policy) -> str:
+    return "".join(
+        c
+        for c in LOOKALIKES.get(letter, "")
+        if (policy.numbers and c in string.digits) or (policy.symbols and c in SYMBOLS)
+    )
+
+
+def stylize(word: str, policy: Policy) -> str:
+    """Optionally replace one letter per word, preserving readability."""
+    indices = [i for i, c in enumerate(word) if replacements(c, policy)]
+    if not indices or not secrets.randbelow(2):
+        return word
+    i = secrets.choice(indices)
+    return word[:i] + secrets.choice(replacements(word[i], policy)) + word[i + 1 :]
+
+
+def ensure_digit(parts: list[str], policy: Policy) -> None:
+    """Prefer a lookalike; otherwise insert a digit at a random word position."""
+    if not policy.numbers or any(c in string.digits for part in parts for c in part):
+        return
+    candidates = [
+        (i, j)
+        for i, part in enumerate(parts)
+        for j, c in enumerate(part)
+        if any(r in string.digits for r in LOOKALIKES.get(c, ""))
+    ]
+    if candidates:
+        i, j = secrets.choice(candidates)
+        digit = secrets.choice(
+            "".join(c for c in LOOKALIKES[parts[i][j]] if c in string.digits)
+        )
+        parts[i] = parts[i][:j] + digit + parts[i][j + 1 :]
+    else:
+        i, j = secrets.choice(
+            [(i, j) for i, part in enumerate(parts) for j in range(len(part) + 1)]
+        )
+        parts[i] = parts[i][:j] + secrets.choice(string.digits) + parts[i][j:]
 
 
 @lru_cache(maxsize=1)
@@ -69,16 +121,11 @@ def generate(
         raise ValueError("words must be an integer between 4 and 128")
     if use_sets:
         parts = [secrets.choice(entries) for entries in configured_sets(sets, policy)]
-        # Light, optional substitutions, at most one per configured entry.
-        if policy.numbers:
-            substitutions = {"a": "4", "e": "3", "i": "1", "o": "0", "s": "5"}
-            for i, part in enumerate(parts):
-                indices = [j for j, c in enumerate(part) if c in substitutions]
-                if indices and secrets.randbelow(2):
-                    j = secrets.choice(indices)
-                    parts[i] = part[:j] + substitutions[part[j]] + part[j + 1 :]
     else:
         parts = [secrets.choice(dictionary()) for _ in range(words)]
+
+    parts = [stylize(part, policy) for part in parts]
+    ensure_digit(parts, policy)
 
     remaining_symbols = []
     previous_separator = ""
@@ -95,20 +142,13 @@ def generate(
         previous_separator = separator
         return separator
 
-    suffix = (
-        "".join(secrets.choice(string.digits) for _ in range(2))
-        if policy.numbers
-        else ""
-    )
-    if suffix:
-        parts.append(suffix)
     password = parts[0]
     for part in parts[1:]:
         password += next_separator() + part
     while len(password) < policy.min_length or (
         policy.mixed_case and sum(c in string.ascii_lowercase for c in password) < 2
     ):
-        password += next_separator() + secrets.choice(dictionary())
+        password += next_separator() + stylize(secrets.choice(dictionary()), policy)
 
     if policy.mixed_case:
         # Capitalize a random letter, keeping all other letters readable/lowercase.
