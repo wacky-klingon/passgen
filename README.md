@@ -72,7 +72,7 @@ CLI flags override valid configuration values, which override defaults. No defau
 - Spaces are removed from configured entries. Unsupported non-ASCII characters are rejected. Disabled digits/symbols are removed; entries that become empty are rejected.
 - Minimum length is a floor, from 1 to 4,096. Additional random dictionary words fill short results.
 - Enabled options guarantee both letter cases, at least one digit, and/or at least one symbol. Disabled options produce lowercase letters only, no digits, and/or no symbols, respectively.
-- Symbol alphabet: `!@#$%&*+-_=?`.
+- Symbol alphabet: `!@#$%&*+-_=?`. Each join uses a randomly selected separator without reuse until the alphabet is exhausted. Longer passwords start a fresh pool, never repeating the previous separator. This applies to word joins, numeric suffixes, and length-padding words; symbols inside configured entries are unchanged.
 - Dictionary mode uses 4–128 words (`--words`), adding more if needed for length. Configured mode does not accept a custom word count.
 - CLI mode prints one password to stdout; errors and configured-mode security warnings go to stderr. The GUI displays these locally without printing passwords.
 

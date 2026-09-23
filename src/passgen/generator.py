@@ -80,17 +80,35 @@ def generate(
     else:
         parts = [secrets.choice(dictionary()) for _ in range(words)]
 
-    separator = secrets.choice(SYMBOLS) if policy.symbols else ""
+    remaining_symbols = []
+    previous_separator = ""
+
+    def next_separator():
+        nonlocal previous_separator
+        if not policy.symbols:
+            return ""
+        if not remaining_symbols:
+            remaining_symbols.extend(SYMBOLS)
+        candidates = [s for s in remaining_symbols if s != previous_separator]
+        separator = secrets.choice(candidates)
+        remaining_symbols.remove(separator)
+        previous_separator = separator
+        return separator
+
     suffix = (
         "".join(secrets.choice(string.digits) for _ in range(2))
         if policy.numbers
         else ""
     )
-    password = separator.join(parts) + (separator + suffix if suffix else "")
+    if suffix:
+        parts.append(suffix)
+    password = parts[0]
+    for part in parts[1:]:
+        password += next_separator() + part
     while len(password) < policy.min_length or (
         policy.mixed_case and sum(c in string.ascii_lowercase for c in password) < 2
     ):
-        password += separator + secrets.choice(dictionary())
+        password += next_separator() + secrets.choice(dictionary())
 
     if policy.mixed_case:
         # Capitalize a random letter, keeping all other letters readable/lowercase.
