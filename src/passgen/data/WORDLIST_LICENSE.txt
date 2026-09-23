@@ -1,0 +1,12 @@
+EFF's New Wordlists for Random Passphrases — long word list
+Author: Electronic Frontier Foundation (EFF)
+Source: https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt
+Background: https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases
+License: Creative Commons Attribution 3.0 United States (CC BY 3.0 US)
+License terms: https://creativecommons.org/licenses/by/3.0/us/legalcode
+
+The bundled english.txt contains all 7,776 source words in their original
+order. The numeric dice-roll column has been removed. At runtime passgen
+removes hyphens and deduplicates the normalized words before uniform
+selection. These modifications are by passgen contributors. No EFF
+endorsement is implied. This data is separate from passgen's MIT code license.

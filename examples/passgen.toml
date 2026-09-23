@@ -1,0 +1,10 @@
+[password]
+min_length = 16
+mixed_case = true
+numbers = true
+symbols = true
+
+[sets]
+people = ["Sam", "Alex"]
+places = ["New York", "London"]
+things = ["Guitar", "Coffee"]
