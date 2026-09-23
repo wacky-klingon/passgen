@@ -11,6 +11,25 @@ let sets;
 let importVersion = 0;
 let outputVersion = 0;
 
+function appendHistory(password) {
+  const item = document.createElement('li');
+  const value = document.createElement('span');
+  value.textContent = '••••••••';
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.textContent = 'Show';
+  toggle.setAttribute('aria-pressed', 'false');
+  let visible = false;
+  toggle.addEventListener('click', () => {
+    visible = !visible;
+    value.textContent = visible ? password : '••••••••';
+    toggle.textContent = visible ? 'Hide' : 'Show';
+    toggle.setAttribute('aria-pressed', String(visible));
+  });
+  item.append(value, ' ', toggle);
+  get('password-history').prepend(item);
+}
+
 function applyPolicy(policy) {
   get('min-length').value = policy.min_length;
   get('mixed-case').checked = policy.mixed_case;
@@ -88,6 +107,7 @@ get('password').addEventListener('click', async () => {
   }
   const version = ++outputVersion;
   button.textContent = password;
+  appendHistory(password);
   get('manual-copy').hidden = true;
   get('copy-text').value = '';
   button.disabled = true;

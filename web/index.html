@@ -36,6 +36,11 @@
     <label id="manual-copy" hidden>Copy manually (Ctrl+C / Command+C)
       <textarea id="copy-text" readonly spellcheck="false" autocomplete="off"></textarea>
     </label>
+    <section aria-labelledby="history-title">
+      <h2 id="history-title">Password history</h2>
+      <p>Cleared on refresh. Use Show to reveal an entry.</p>
+      <ol id="password-history"></ol>
+    </section>
     <footer>
       <p>Passwords stay visible here until replaced. Clipboard history may retain them. No analytics, storage, or password uploads.</p>
       <p>Code: <a href="./LICENSE.txt">MIT</a> · EFF words: <a href="./WORDLIST_LICENSE.txt">CC BY 3.0 US</a> · <a href="./TOML_LICENSE.txt">TOML parser license</a></p>
