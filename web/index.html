@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>passgen — memorable passwords</title>
+</head>
+<body>
+  <main>
+    <header><h1>passgen</h1><p>Memorable passwords. Generated in your browser.</p></header>
+    <fieldset>
+      <legend>Include</legend>
+      <label><input id="mixed-case" type="checkbox" checked> Mixed case</label>
+      <label><input id="numbers" type="checkbox" checked> Numbers</label>
+      <label><input id="symbols" type="checkbox" checked> Symbols</label>
+    </fieldset>
+    <div class="options">
+      <label>Mode
+        <select id="mode"><option value="dictionary">English words</option><option value="configured">Configured sets</option></select>
+      </label>
+      <label>Minimum length <input id="min-length" type="number" min="1" max="4096" value="16" required></label>
+      <label>Words <input id="words" type="number" min="4" max="128" value="4" required></label>
+    </div>
+    <p id="mode-note"></p>
+    <details>
+      <summary>Load local TOML configuration</summary>
+      <p>Optional. Read locally, never uploaded or saved. There is no configuration editor.</p>
+      <label>Select a TOML file <input id="config" type="file" accept=".toml"></label>
+      <button id="forget" type="button">Forget configuration</button>
+      <p id="config-status" role="status">No configuration loaded.</p>
+    </details>
+    <button id="password" type="button" aria-label="Generate a new password and copy it to the clipboard" aria-describedby="hint">Click to generate and copy</button>
+    <p id="hint">Click the area above, or focus it and press Enter / Space. Each activation makes a new password.</p>
+    <p id="status" role="status" aria-live="polite">Ready.</p>
+    <label id="manual-copy" hidden>Copy manually (Ctrl+C / Command+C)
+      <textarea id="copy-text" readonly spellcheck="false" autocomplete="off"></textarea>
+    </label>
+    <footer>
+      <p>Passwords stay visible here until replaced. Clipboard history may retain them. No analytics, storage, or password uploads.</p>
+      <p>Code: <a href="./LICENSE.txt">MIT</a> · EFF words: <a href="./WORDLIST_LICENSE.txt">CC BY 3.0 US</a> · <a href="./TOML_LICENSE.txt">TOML parser license</a></p>
+    </footer>
+    <noscript>JavaScript is required for local password generation.</noscript>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

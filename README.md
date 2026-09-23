@@ -4,6 +4,18 @@ An offline Python desktop app, CLI, and library for memorable passwords, managed
 
 Status: initial implementation, with automated tests; not independently security-audited.
 
+## Browser version (initial implementation)
+
+A static HTML/JavaScript version now lives in [`web/`](web/README.md). Run it locally with Node.js 22.12+:
+
+```bash
+cd web
+npm ci
+npm run dev
+```
+
+It supports the same generation modes and requirements, local-only TOML import, and click-to-generate-and-copy. No backend or configuration editor. The Python app remains supported below. See the [browser documentation](web/README.md) for testing and GitHub Pages deployment; the site has not been published by this change.
+
 ## Quick start
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). From this repository:

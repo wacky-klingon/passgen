@@ -2,7 +2,9 @@
 
 This initial implementation has not undergone an independent security audit.
 
-- Uses Python `secrets` for random choices; does not use a fallback PRNG.
+- Python uses `secrets` for random choices; the browser app uses Web Crypto `getRandomValues()` with rejection sampling. Neither uses a fallback PRNG.
+- The static browser app loads assets from its host; generation itself makes no requests. Imported TOML is read locally and kept in memory, never uploaded or placed in browser storage. Do not deploy personal configuration files with the site.
+- Serve browser production builds over HTTPS (localhost is suitable for development). Clipboard permissions may be denied; the UI reports failure and offers manual copying. Browser extensions, clipboard history, and compromised hosting or devices remain outside the app's protection. Offline/PWA support is not implemented.
 - Works offline after installation and does not log or retain generated passwords.
 - CLI mode prints passwords to stdout. Terminal scrollback, redirection, and process wrappers may retain output.
 - The desktop UI displays generated passwords and copies each new password on an explicit click (or Enter/Space) in the output area. Clipboard managers/history may retain passwords; the application does not automatically clear the system clipboard. Passwords remain visible until replaced or the window closes. GUI settings never write to configuration files.
