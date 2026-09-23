@@ -28,7 +28,7 @@ Do not open `index.html` directly with a `file://` URL. Use localhost or HTTPS s
 - Configured mode selects exactly one entry from each set; word count is disabled in this mode.
 - Mixed-case, digit, and symbol requirements follow the Python implementation.
 - Light lookalike substitutions, random-position digit fallback, and non-repeating separator pools.
-- Click the output or activate it with Enter/Space to generate and copy a new password. Clipboard failures expose a selected read-only field for manual copying.
+- Click the output or activate it with Enter/Space to generate a new password. Generation does not change the clipboard. Use the separate Copy button to copy the current password; clipboard failures expose a selected read-only field for manual copying.
 - Policy controls are temporary. No localStorage, sessionStorage, database, analytics, external fonts, or CDN scripts.
 - Forget configuration discards imported sets, restores defaults, and clears displayed output. It does not erase clipboard history or guarantee secure erasure from browser memory.
 
