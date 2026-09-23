@@ -9,24 +9,23 @@ from .generator import generate
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="passgen")
-    commands = parser.add_subparsers(dest="command", required=True)
-    command = commands.add_parser("generate", help="generate one memorable password")
-    command.add_argument("--config", type=Path)
-    modes = command.add_mutually_exclusive_group()
-    modes.add_argument("--use-sets", action="store_true")
-    modes.add_argument("--no-sets", action="store_true")
-    command.add_argument("--min-length", type=int)
-    command.add_argument(
-        "--words",
-        type=int,
-        default=4,
-        help="dictionary word count (4–128, default 4); dictionary mode only",
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # No command (or just option flags) opens the UI. Explicit generate stays headless.
+    if not argv or (argv[0].startswith("-") and argv[0] not in ("-h", "--help")):
+        argv.insert(0, "gui")
+    parser = argparse.ArgumentParser(
+        prog="passgen",
+        description="Opens the GUI by default; use generate for CLI output.",
     )
-    for name in ("mixed-case", "numbers", "symbols"):
-        command.add_argument(
-            f"--{name}", action=argparse.BooleanOptionalAction, default=None
-        )
+    commands = parser.add_subparsers(dest="command", required=True)
+    options = argparse.ArgumentParser(add_help=False)
+    add_options(options)
+    commands.add_parser(
+        "generate", parents=[options], help="generate one password in the terminal"
+    )
+    commands.add_parser(
+        "gui", parents=[options], help="open the password window (default)"
+    )
     args = parser.parse_args(argv)
     try:
         config = load_config(args.config)
@@ -37,10 +36,23 @@ def main(argv: list[str] | None = None) -> int:
                 for name in ("min_length", "mixed_case", "numbers", "symbols")
             },
         )
-        if args.use_sets and args.words != 4:
+        if args.use_sets and args.words is not None:
             raise ValueError("--words is only available in dictionary mode")
+        words = 4 if args.words is None else args.words
+        if not 4 <= words <= 128:
+            raise ValueError("words must be an integer between 4 and 128")
+        if args.command == "gui":
+            try:
+                from .gui import launch
+            except ImportError:
+                raise ValueError(
+                    "Tkinter is unavailable. Install Python's Tk support or use 'passgen generate'."
+                ) from None
+            return launch(
+                policy, sets=config.get("sets"), use_sets=args.use_sets, words=words
+            )
         password = generate(
-            policy, use_sets=args.use_sets, sets=config.get("sets"), words=args.words
+            policy, use_sets=args.use_sets, sets=config.get("sets"), words=words
         )
     except ValueError as error:
         parser.error(str(error))
@@ -51,3 +63,22 @@ def main(argv: list[str] | None = None) -> int:
         )
     print(password)
     return 0
+
+
+def add_options(command):
+    """Share startup overrides between the window and headless command."""
+    command.add_argument("--config", type=Path)
+    modes = command.add_mutually_exclusive_group()
+    modes.add_argument("--use-sets", action="store_true")
+    modes.add_argument("--no-sets", action="store_true")
+    command.add_argument("--min-length", type=int)
+    command.add_argument(
+        "--words",
+        type=int,
+        default=None,
+        help="dictionary word count (4–128, default 4); dictionary mode only",
+    )
+    for name in ("mixed-case", "numbers", "symbols"):
+        command.add_argument(
+            f"--{name}", action=argparse.BooleanOptionalAction, default=None
+        )

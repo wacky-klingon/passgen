@@ -4,7 +4,8 @@ This initial implementation has not undergone an independent security audit.
 
 - Uses Python `secrets` for random choices; does not use a fallback PRNG.
 - Works offline after installation and does not log or retain generated passwords.
-- Prints passwords to stdout. Terminal scrollback, redirection, and process wrappers may retain output.
+- CLI mode prints passwords to stdout. Terminal scrollback, redirection, and process wrappers may retain output.
+- The desktop UI displays generated passwords and copies each new password on an explicit click (or Enter/Space) in the output area. Clipboard managers/history may retain passwords; the application does not automatically clear the system clipboard. Passwords remain visible until replaced or the window closes. GUI settings never write to configuration files.
 - Configured personal words can be guessed. Substitutions and mixed case do not fix small or predictable sets.
 - Dictionary mode defaults to four words; prefer `--words 6` or more for sensitive use. The usable normalized list has 7,775 words. Four independent selections provide approximately 51.7 bits of word-selection entropy; six provide approximately 77.5 bits, before any transformations. These figures are not a security guarantee for every threat model.
 - Generation appends words to meet minimum length, so exact maximum lengths imposed by websites are not supported.

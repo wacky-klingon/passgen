@@ -1,6 +1,6 @@
 # passgen
 
-An offline Python CLI and library for memorable passwords, managed with **uv** and configured with **TOML**.
+An offline Python desktop app, CLI, and library for memorable passwords, managed with **uv** and configured with **TOML**.
 
 Status: initial implementation, with automated tests; not independently security-audited.
 
@@ -11,7 +11,13 @@ Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). From this repository
 ```bash
 uv sync
 
-# Default: at least four English dictionary words
+# Default entry point: open the desktop window
+uv run passgen
+
+# Open with configured sets and startup overrides
+uv run passgen --config examples/passgen.toml --use-sets --no-numbers
+
+# CLI: at least four English dictionary words
 uv run passgen generate
 
 # Recommended for sensitive use: six or more words
@@ -29,6 +35,18 @@ uv run passgen generate --no-mixed-case --no-numbers --no-symbols
 ```
 
 Installation needs dependencies/build tooling; password generation itself makes no network calls. Outputs are random; illustrative examples in the proposal are not fixed templates or passwords to reuse.
+
+## Desktop UI
+
+`uv run passgen` (or `uv run python -m passgen`) opens the Tkinter window. `passgen gui` also works. The three toggles enable/disable mixed case, numbers, and symbols for the next password. Choose English words or configured sets and adjust minimum length; word count is disabled in configured mode.
+
+**Click the read-only password area to generate a new password and copy it to the clipboard.** With the area focused, Enter or Space does the same. Invalid settings are shown in the status line without replacing the previous password or clipboard. Clipboard failures are reported rather than claiming success. No password is generated or copied merely by opening the window or changing a setting.
+
+The same startup flags accepted by `generate` initialize the UI. Changes in the window are temporary: there is no config editor and nothing is written to TOML. `--words` is rejected with `--use-sets`.
+
+Tkinter must be available in the Python interpreter used by uv. If it is missing, install your platform's matching Python Tk support (for example `python3-tk` for many Linux system Pythons) and select that interpreter with uv. Without a graphical display, use `passgen generate`; CLI operation does not import Tkinter.
+
+Passwords remain visible until replaced or the window closes. Clipboard history may retain copied values; clipboard persistence after closing the app depends on your operating system.
 
 ## Configuration
 
@@ -56,7 +74,7 @@ CLI flags override valid configuration values, which override defaults. No defau
 - Enabled options guarantee both letter cases, at least one digit, and/or at least one symbol. Disabled options produce lowercase letters only, no digits, and/or no symbols, respectively.
 - Symbol alphabet: `!@#$%&*+-_=?`.
 - Dictionary mode uses 4–128 words (`--words`), adding more if needed for length. Configured mode does not accept a custom word count.
-- Print one password to stdout; errors and configured-mode security warnings go to stderr.
+- CLI mode prints one password to stdout; errors and configured-mode security warnings go to stderr. The GUI displays these locally without printing passwords.
 
 ## Python API
 
