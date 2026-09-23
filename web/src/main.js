@@ -10,6 +10,8 @@ const dictionary = parseDictionary(wordlist);
 let sets;
 let importVersion = 0;
 let outputVersion = 0;
+let currentPassword = null;
+let copying = false;
 
 function appendHistory(password) {
   const item = document.createElement('li');
@@ -80,14 +82,16 @@ get('forget').addEventListener('click', () => {
   get('mode').value = 'dictionary';
   get('config').value = '';
   get('config-status').textContent = 'Configuration forgotten. Defaults restored.';
-  get('password').textContent = 'Click to generate and copy';
+  currentPassword = null;
+  get('password').textContent = 'Click to generate';
+  get('copy').disabled = true;
   get('manual-copy').hidden = true;
   get('copy-text').value = '';
   get('status').textContent = 'The system clipboard has not been cleared.';
   updateMode();
 });
 
-get('password').addEventListener('click', async () => {
+get('password').addEventListener('click', () => {
   const button = get('password');
   const useSets = get('mode').value === 'configured';
   let password;
@@ -105,17 +109,27 @@ get('password').addEventListener('click', async () => {
     get('status').textContent = error.message;
     return;
   }
-  const version = ++outputVersion;
+  ++outputVersion;
+  currentPassword = password;
   button.textContent = password;
   appendHistory(password);
   get('manual-copy').hidden = true;
   get('copy-text').value = '';
-  button.disabled = true;
+  get('copy').disabled = copying;
+  get('status').textContent = 'Password generated. Click Copy to copy it.';
+});
+
+get('copy').addEventListener('click', async () => {
+  if (currentPassword === null || copying) return;
+  const password = currentPassword;
+  const version = outputVersion;
+  copying = true;
+  get('copy').disabled = true;
   try {
     // Invoked directly within the click gesture for browser clipboard permissions.
     await navigator.clipboard.writeText(password);
     if (version !== outputVersion) return;
-    get('status').textContent = 'New password copied. Clipboard history may retain it.';
+    get('status').textContent = 'Password copied. Clipboard history may retain it.';
   } catch {
     if (version !== outputVersion) return;
     get('status').textContent = 'Generated, but copying failed. Use the selected text below to copy manually.';
@@ -124,6 +138,7 @@ get('password').addEventListener('click', async () => {
     get('copy-text').focus();
     get('copy-text').select();
   } finally {
-    button.disabled = false;
+    copying = false;
+    get('copy').disabled = currentPassword === null;
   }
 });

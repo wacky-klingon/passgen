@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('generates and copies on click and keyboard, without network or storage writes', async ({ page, context }) => {
+test('generates without auto-copy and copies only on request, without network or storage writes', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -9,15 +9,23 @@ test('generates and copies on click and keyboard, without network or storage wri
   const requests = [];
   page.on('request', (request) => requests.push(request.url()));
   const output = page.locator('#password');
+  await expect(page.locator('#copy')).toBeDisabled();
+  await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
   await output.click();
-  await expect(page.locator('#status')).toContainText('New password copied');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('unchanged');
+  await page.locator('#copy').click();
+  await expect(page.locator('#status')).toContainText('Password copied');
   const password = await output.textContent();
   expect(password.length).toBeGreaterThanOrEqual(16);
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(password);
   await output.focus();
   await output.press('Enter');
-  await expect(page.locator('#status')).toContainText('New password copied');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(password);
+  await page.locator('#copy').focus();
+  await page.locator('#copy').press('Enter');
+  await expect(page.locator('#status')).toContainText('Password copied');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(await output.textContent());
+  await expect(page.locator('#password-history li')).toHaveCount(2);
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
   expect(requests).toEqual([]);
   expect(errors).toEqual([]);
@@ -36,6 +44,7 @@ test('local TOML import, configured mode, forgetting, and private errors', async
   await page.locator('#password').click();
   await expect(page.locator('#password')).toHaveText('samnewyorkguitar');
   await page.locator('#forget').click();
+  await expect(page.locator('#copy')).toBeDisabled();
   await expect(page.locator('#words')).toBeEnabled();
   await page.locator('#mode').selectOption('configured');
   await page.locator('#password').click();
@@ -52,6 +61,7 @@ test('clipboard denial reports failure but retains generated output', async ({ p
   });
   await page.goto('./');
   await page.locator('#password').click();
+  await page.locator('#copy').click();
   await expect(page.locator('#status')).toContainText('copying failed');
   await expect(page.locator('#copy-text')).toBeVisible();
   await expect(page.locator('#copy-text')).toHaveValue(await page.locator('#password').textContent());
@@ -64,5 +74,5 @@ test('invalid controls do not replace the output', async ({ page }) => {
   await page.locator('#min-length').fill('0');
   await page.locator('#password').click();
   await expect(page.locator('#status')).toContainText('Minimum length');
-  await expect(page.locator('#password')).toHaveText('Click to generate and copy');
+  await expect(page.locator('#password')).toHaveText('Click to generate');
 });
