@@ -12,7 +12,7 @@ Build an open-source Python CLI and library that generates memorable passwords f
 - Use TOML for user configuration, parsed with Python's standard-library `tomllib`.
 - Use `argparse` for the CLI and `secrets` for cryptographically secure selection.
 - Use `pytest` for tests and Ruff for linting and formatting.
-- Proposed project license: MIT. Include separate attribution and license notices for bundled word-list data.
+- Selected code license: [MIT](LICENSE), allowing permissive personal and commercial reuse with copyright and license notices preserved. Bundled EFF word-list data is separately licensed under CC BY 3.0 US; retain its attribution, license reference, and modification notices.
 
 ## Generation modes
 
@@ -45,7 +45,7 @@ Ignore configured people, places, and things. Select words independently using `
 - Add words until the minimum length is satisfied.
 - Favor familiar, readable words and light transformations over heavy leetspeak.
 - Do not use quotations, common expressions, or deterministic word sequences.
-- Bundle a reviewed, deduplicated list of at least 7,776 words with a compatible redistribution license and attribution. Confirm the source and license before implementation.
+- Bundle the EFF long word list under CC BY 3.0 US with separate attribution and modification notices. The original target was at least 7,776 distinct usable words; see the implementation status below for the normalization-related adjustment.
 
 Illustrative output:
 

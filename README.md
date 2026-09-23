@@ -116,4 +116,8 @@ uv build
 
 ## License
 
-Code: [MIT](LICENSE). EFF word-list data: [CC BY 3.0 US, with attribution](src/passgen/data/WORDLIST_LICENSE.txt).
+The project code is licensed under the [MIT License](LICENSE). You may use, modify, and redistribute it, including commercially, provided you preserve the copyright and license notice. Publishing your modifications is not required. The software is provided without warranty; see the license for full terms.
+
+MIT was chosen for its simplicity and permissive reuse terms.
+
+The bundled EFF word-list data is **separately licensed under CC BY 3.0 US**, not MIT. Redistributing it requires preserving EFF attribution, the license reference, and notices of modifications. See [word-list attribution and licensing](src/passgen/data/WORDLIST_LICENSE.txt).
