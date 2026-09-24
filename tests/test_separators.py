@@ -15,7 +15,7 @@ def test_unique_separators(monkeypatch, use_sets, numbers):
         sets={"people": ["Sam"], "places": ["York"], "things": ["Book"]},
     )
     separators = [c for c in password if c in SYMBOLS]
-    assert len(separators) == (2 if use_sets else 3)
+    assert len(separators) == 2
     assert len(set(separators)) == len(separators)
 
 
@@ -23,7 +23,7 @@ def test_long_password_recycles_pool_without_consecutive_repeats(monkeypatch):
     # Taking the last candidate exercises the pool-reset boundary.
     monkeypatch.setattr("passgen.generator.secrets.choice", lambda seq: seq[-1])
     monkeypatch.setattr("passgen.generator.stylize", lambda word, policy: word)
-    policy = Policy(600, False, True, True)
+    policy = Policy(100, False, True, True, 128)
     password = generate(policy)
     assert policy.accepts(password)
     separators = [c for c in password if c in SYMBOLS]
@@ -35,5 +35,5 @@ def test_long_password_recycles_pool_without_consecutive_repeats(monkeypatch):
 
 
 def test_symbols_disabled():
-    password = generate(Policy(200, symbols=False))
+    password = generate(Policy(100, symbols=False, max_length=128))
     assert not any(c in SYMBOLS for c in password)

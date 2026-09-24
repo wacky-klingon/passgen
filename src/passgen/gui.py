@@ -8,7 +8,7 @@ from passgen.policy import Policy
 
 
 class PasswordWindow:
-    def __init__(self, root, policy: Policy, *, sets=None, use_sets=False, words=4):
+    def __init__(self, root, policy: Policy, *, sets=None, use_sets=False, words=3):
         self.root = root
         self.sets = sets
         root.title("passgen")
@@ -20,6 +20,7 @@ class PasswordWindow:
         self.symbols = tk.BooleanVar(root, policy.symbols)
         self.use_sets = tk.BooleanVar(root, use_sets)
         self.min_length = tk.StringVar(root, str(policy.min_length))
+        self.max_length = tk.StringVar(root, str(policy.max_length))
         self.words = tk.StringVar(root, str(words))
         self.status = tk.StringVar(
             root, "Click the password area to generate and copy."
@@ -53,11 +54,15 @@ class PasswordWindow:
         limits.pack(fill="x")
         ttk.Label(limits, text="Minimum length").pack(side="left")
         ttk.Spinbox(
-            limits, from_=1, to=4096, width=6, textvariable=self.min_length
+            limits, from_=1, to=128, width=5, textvariable=self.min_length
+        ).pack(side="left", padx=6)
+        ttk.Label(limits, text="Maximum length").pack(side="left", padx=(12, 0))
+        ttk.Spinbox(
+            limits, from_=1, to=128, width=5, textvariable=self.max_length
         ).pack(side="left", padx=6)
         ttk.Label(limits, text="Words").pack(side="left", padx=(12, 0))
         self.word_input = ttk.Spinbox(
-            limits, from_=4, to=128, width=5, textvariable=self.words
+            limits, from_=3, to=128, width=5, textvariable=self.words
         )
         self.word_input.pack(side="left", padx=6)
         self.mode_note = ttk.Label(frame, wraplength=470)
@@ -103,14 +108,19 @@ class PasswordWindow:
     def generate_and_copy(self, event=None):
         try:
             try:
-                length = int(self.min_length.get())
-                words = 4 if self.use_sets.get() else int(self.words.get())
+                min_length = int(self.min_length.get())
+                max_length = int(self.max_length.get())
+                words = 3 if self.use_sets.get() else int(self.words.get())
             except ValueError:
                 raise ValueError(
-                    "Minimum length and word count must be integers."
+                    "Minimum length, maximum length and word count must be integers."
                 ) from None
             policy = Policy(
-                length, self.mixed_case.get(), self.numbers.get(), self.symbols.get()
+                min_length,
+                self.mixed_case.get(),
+                self.numbers.get(),
+                self.symbols.get(),
+                max_length,
             )
             password = generate(
                 policy, use_sets=self.use_sets.get(), sets=self.sets, words=words
@@ -132,7 +142,7 @@ class PasswordWindow:
         return "break"
 
 
-def launch(policy: Policy, *, sets=None, use_sets=False, words=4) -> int:
+def launch(policy: Policy, *, sets=None, use_sets=False, words=3) -> int:
     try:
         root = tk.Tk()
     except tk.TclError:

@@ -18,7 +18,7 @@ describe('all policies in both modes', () => {
   for (const useSets of [false, true]) for (const mixed_case of [false, true]) {
     for (const numbers of [false, true]) for (const symbols of [false, true]) {
       test(JSON.stringify({ useSets, mixed_case, numbers, symbols }), () => {
-        const policy = validatePolicy({ min_length: 100, mixed_case, numbers, symbols });
+        const policy = validatePolicy({ min_length: 100, max_length: 128, mixed_case, numbers, symbols });
         const password = generate({ policy, useSets, sets, dictionary });
         expect(accepts(password, policy)).toBe(true);
       });
@@ -31,8 +31,8 @@ test('exactly one normalized entry from each set, no fixed suffix', () => {
   expect(generate({ policy: { min_length: 1, mixed_case: false, symbols: false }, useSets: true, sets, dictionary }, first)).toBe('5amnewyorkguitar');
 });
 
-test('dictionary mode ignores unusable sets, uses at least four words', () => {
-  expect(generate({ policy: { min_length: 1, mixed_case: false, numbers: false, symbols: false }, sets: 'bad', dictionary: ['meadow'] }, first)).toBe('meadow'.repeat(4));
+test('dictionary mode ignores unusable sets, uses at least three words', () => {
+  expect(generate({ policy: { min_length: 1, mixed_case: false, numbers: false, symbols: false }, sets: 'bad', dictionary: ['meadow'] }, first)).toBe('meadow'.repeat(3));
 });
 
 test('separators are unique within each pool and do not repeat across boundaries', () => {
@@ -66,7 +66,7 @@ test.each([{}, { ...sets, people: [] }, { ...sets, places: ['東京'] }, { ...se
   expect(() => generate({ useSets: true, sets: badSets, dictionary })).toThrow();
 });
 
-test.each([{ min_length: true }, { min_length: 4097 }, { numbers: 'yes' }, { extra: true }, []])('invalid policy rejected', (policy) => {
+test.each([{ min_length: true }, { max_length: 129 }, { min_length: 65 }, { numbers: 'yes' }, { extra: true }, []])('invalid policy rejected', (policy) => {
   expect(() => validatePolicy(policy)).toThrow();
 });
 
@@ -79,7 +79,13 @@ test('TOML parsing, defaults, and private diagnostics', () => {
 
 test('rejects invalid dictionary and count', () => {
   expect(() => generate({ dictionary: [] })).toThrow('Dictionary');
-  expect(() => generate({ dictionary, words: 3 })).toThrow('Word count');
+  expect(() => generate({ dictionary, words: 2 })).toThrow('Word count');
+});
+
+test('generated passwords stay inside the inclusive character range', () => {
+  const policy = validatePolicy({ min_length: 16, max_length: 16, mixed_case: false, numbers: false, symbols: false });
+  expect(generate({ policy, words: 3, dictionary: ['able', 'baker', 'cider'] }, first)).toHaveLength(16);
+  expect(() => generate({ policy: { min_length: 4, max_length: 4, mixed_case: false, numbers: false, symbols: true }, words: 3, dictionary: ['able'] }, first)).toThrow('fit');
 });
 
 test('rejection sampling discards biased tail before using modulo', () => {

@@ -33,14 +33,20 @@ def main(argv: list[str] | None = None) -> int:
             config,
             {
                 name: getattr(args, name)
-                for name in ("min_length", "mixed_case", "numbers", "symbols")
+                for name in (
+                    "min_length",
+                    "max_length",
+                    "mixed_case",
+                    "numbers",
+                    "symbols",
+                )
             },
         )
         if args.use_sets and args.words is not None:
             raise ValueError("--words is only available in dictionary mode")
-        words = 4 if args.words is None else args.words
-        if not 4 <= words <= 128:
-            raise ValueError("words must be an integer between 4 and 128")
+        words = 3 if args.words is None else args.words
+        if not 3 <= words <= 128:
+            raise ValueError("words must be an integer between 3 and 128")
         if args.command == "gui":
             try:
                 from .gui import launch
@@ -72,11 +78,12 @@ def add_options(command):
     modes.add_argument("--use-sets", action="store_true")
     modes.add_argument("--no-sets", action="store_true")
     command.add_argument("--min-length", type=int)
+    command.add_argument("--max-length", type=int)
     command.add_argument(
         "--words",
         type=int,
         default=None,
-        help="dictionary word count (4–128, default 4); dictionary mode only",
+        help="dictionary word count (3–128, default 3); dictionary mode only",
     )
     for name in ("mixed-case", "numbers", "symbols"):
         command.add_argument(

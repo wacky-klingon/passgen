@@ -1,5 +1,6 @@
 [password]
 min_length = 16
+max_length = 64
 mixed_case = true
 numbers = true
 symbols = true

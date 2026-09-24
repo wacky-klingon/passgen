@@ -7,22 +7,47 @@ fieldset { border: 1px solid #718096; border-radius: .5rem; margin: 1.5rem 0; }
 fieldset label { display: inline-flex; align-items: center; margin: .4rem .9rem .4rem 0; gap: .4rem; }
 .options { display: flex; flex-wrap: wrap; gap: 1rem; }
 .options label { display: flex; flex-direction: column; gap: .3rem; }
-input, select, button { font: inherit; }
+input, select, button, textarea { font: inherit; }
 input[type=number] { width: 7rem; }
 input, select { padding: .5rem; border: 1px solid #718096; border-radius: .3rem; }
 input[type=file] { max-width: 100%; box-sizing: border-box; }
-button { cursor: pointer; border-radius: .5rem; padding: .5rem 1rem; }
+button { cursor: pointer; border-radius: .5rem; padding: .5rem 1rem; min-height: 44px; }
 button:disabled { cursor: wait; }
 :focus-visible { outline: 3px solid #638cff; outline-offset: 3px; }
 details { margin: 1rem 0; padding: .75rem; border: 1px solid #718096; border-radius: .5rem; }
 summary { cursor: pointer; }
-#password { display: block; width: 100%; min-height: 8rem; margin-top: 1.5rem; padding: 1rem; border: 2px solid #638cff; background: light-dark(#fff, #1e293b); color: inherit; font-family: ui-monospace, monospace; font-size: 1.4rem; overflow-wrap: anywhere; white-space: pre-wrap; user-select: text; }
-#status { min-height: 3rem; font-weight: 600; }
-#password-history li { margin: .5rem 0; overflow-wrap: anywhere; }
+.primary { display: block; width: 100%; margin: 1.25rem 0 1rem; border: 0; background: #315bdc; color: white; font-weight: 700; }
+.output-card { position: relative; margin-top: 1rem; }
+.output-card label { display: block; margin-bottom: .35rem; font-weight: 700; }
+#copy { position: absolute; top: 2.2rem; right: .75rem; min-width: 5.8rem; }
+#password {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 8rem;
+  padding: 1rem 7.25rem 1rem 1rem;
+  border: 2px solid #638cff;
+  border-radius: .5rem;
+  background: light-dark(#fff, #1e293b);
+  color: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+  resize: vertical;
+}
+#output-meta, #status { min-height: 1.75rem; }
+#status { font-weight: 600; }
+#password-history li { display: flex; align-items: center; gap: .5rem; margin: .5rem 0; overflow-wrap: anywhere; }
 #password-history span { font-family: ui-monospace, monospace; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 #copy-text { display: block; box-sizing: border-box; width: 100%; min-height: 6rem; font: 1rem ui-monospace, monospace; }
 [hidden] { display: none !important; }
-#hint, footer, #mode-note { font-size: .9rem; }
+#requirements-note, footer, #mode-note, #settings-summary { font-size: .9rem; }
+#settings-summary { font-weight: 400; }
 footer { border-top: 1px solid #718096; margin-top: 1.5rem; }
 a { color: light-dark(#254dc4, #a6c1ff); }
-@media (max-width: 480px) { main { margin: .5rem auto; padding: 1rem; } }
+@media (max-width: 480px) {
+  main { margin: .5rem auto; padding: 1rem; }
+  #copy { position: static; margin: .5rem 0; width: 100%; }
+  #password { padding: 1rem; }
+}

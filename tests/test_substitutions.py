@@ -53,4 +53,4 @@ def test_both_modes_replace_letters_without_suffix(monkeypatch, use_sets):
         use_sets=use_sets,
         sets={"people": ["sam"], "places": ["york"], "things": ["guitar"]},
     )
-    assert password == ("5amyorkguitar" if use_sets else "m3adowmeadowmeadowmeadow")
+    assert password == ("5amyorkguitar" if use_sets else "m3adowmeadowmeadow")
