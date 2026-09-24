@@ -2,12 +2,13 @@ export const SYMBOLS = '!@#$%&*+-_=?';
 export const DIGITS = '0123456789';
 export const DEFAULT_POLICY = Object.freeze({
   min_length: 16, mixed_case: true, numbers: true, symbols: true, max_length: 64,
+  substitutions: false, easy_to_type: false,
 });
 
 export function validatePolicy(settings = {}) {
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)
     || ![Object.prototype, null].includes(Object.getPrototypeOf(settings))) {
-    throw new Error('password must be a TOML table.');
+    throw new Error('Password settings must be an object.');
   }
   if (Object.keys(settings).some((key) => !Object.hasOwn(DEFAULT_POLICY, key))) {
     throw new Error('Unknown password setting.');
@@ -22,7 +23,7 @@ export function validatePolicy(settings = {}) {
   if (policy.min_length > policy.max_length) {
     throw new Error('Minimum length must not exceed maximum length.');
   }
-  for (const key of ['mixed_case', 'numbers', 'symbols']) {
+  for (const key of ['mixed_case', 'numbers', 'symbols', 'substitutions', 'easy_to_type']) {
     if (typeof policy[key] !== 'boolean') throw new Error(`${key} must be a boolean.`);
   }
   return policy;

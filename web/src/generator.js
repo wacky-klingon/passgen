@@ -31,7 +31,7 @@ export function normalize(entry, policy) {
 
 function configuredSets(sets, policy) {
   if (!sets || typeof sets !== 'object' || Array.isArray(sets)) {
-    throw new Error('Configured mode requires a sets table. Import a TOML configuration.');
+    throw new Error('Configured mode requires names, places, and things lists.');
   }
   return SET_NAMES.map((name) => {
     const entries = Object.hasOwn(sets, name) ? sets[name] : undefined;
@@ -47,42 +47,34 @@ const indices = (word, predicate) => [...word].flatMap((c, i) => predicate(c) ? 
 
 function replacements(letter, policy) {
   return [...(LOOKALIKES[letter] ?? '')].filter((c) =>
-    (policy.numbers && DIGITS.includes(c)) || (policy.symbols && SYMBOLS.includes(c)));
+    ((policy.numbers && DIGITS.includes(c)) || (policy.symbols && SYMBOLS.includes(c)))
+    && (!policy.easy_to_type || !'01'.includes(c)));
 }
 
 export function stylize(word, policy, choose = secureChoose) {
   const candidates = indices(word, (c) => replacements(c, policy).length);
-  if (!candidates.length || !choose([false, true])) return word;
+  if (!policy.substitutions || !candidates.length || !choose([false, true])) return word;
   const i = choose(candidates);
   return replaceAt(word, i, choose(replacements(word[i], policy)));
 }
 
 export function ensureDigit(parts, policy, choose = secureChoose) {
   if (!policy.numbers || parts.some((part) => /[0-9]/.test(part))) return;
-  const candidates = parts.flatMap((part, i) => [...part].flatMap((c, j) =>
-    [...(LOOKALIKES[c] ?? '')].some((r) => DIGITS.includes(r)) ? [[i, j]] : []));
+  const candidates = policy.substitutions ? parts.flatMap((part, i) => [...part].flatMap((c, j) =>
+    [...replacements(c, policy)].some((r) => DIGITS.includes(r)) ? [[i, j]] : [])) : [];
   if (candidates.length) {
     const [i, j] = choose(candidates);
-    const digits = [...LOOKALIKES[parts[i][j]]].filter((c) => DIGITS.includes(c));
+    const digits = [...replacements(parts[i][j], policy)].filter((c) => DIGITS.includes(c));
     parts[i] = replaceAt(parts[i], j, choose(digits));
   } else {
     const positions = parts.flatMap((part, i) => Array.from({ length: part.length + 1 }, (_, j) => [i, j]));
     const [i, j] = choose(positions);
-    parts[i] = parts[i].slice(0, j) + choose(DIGITS) + parts[i].slice(j);
+    parts[i] = parts[i].slice(0, j) + choose(policy.easy_to_type ? '23456789' : DIGITS) + parts[i].slice(j);
   }
 }
 
 export function separatorSource(enabled, choose = secureChoose) {
-  let remaining = [];
-  let previous = '';
-  return () => {
-    if (!enabled) return '';
-    if (!remaining.length) remaining = [...SYMBOLS];
-    const separator = choose(remaining.filter((c) => c !== previous));
-    remaining.splice(remaining.indexOf(separator), 1);
-    previous = separator;
-    return separator;
-  };
+  return () => enabled ? choose(SYMBOLS) : '';
 }
 
 function joinParts(parts, policy, choose) {
@@ -125,7 +117,8 @@ export function generate({ policy: settings = {}, useSets = false, sets, words =
     if (joinedLength(parts, policy) > policy.max_length) continue;
 
     while (joinedLength(parts, policy) < policy.min_length
-      || (policy.mixed_case && ((parts.join('').match(/[a-z]/g)?.length ?? 0) < 2))) {
+      || (policy.mixed_case && (((parts.join('').match(/[a-z]/g)?.length ?? 0) < 2)
+        || ![...parts.join('')].some((c) => /[a-z]/.test(c) && (!policy.easy_to_type || !'io'.includes(c)))))) {
       if (parts.length >= MAX_PARTS) {
         parts = [];
         break;
@@ -141,7 +134,7 @@ export function generate({ policy: settings = {}, useSets = false, sets, words =
 
     let password = joinParts(parts, policy, choose);
     if (policy.mixed_case) {
-      const lowerIndices = indices(password, (c) => /[a-z]/.test(c));
+      const lowerIndices = indices(password, (c) => /[a-z]/.test(c) && (!policy.easy_to_type || !'io'.includes(c)));
       if (!lowerIndices.length) continue;
       const i = choose(lowerIndices);
       password = replaceAt(password, i, password[i].toUpperCase());

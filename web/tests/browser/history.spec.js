@@ -45,7 +45,7 @@ test('recent passwords put newest archived entries first, cap at 10, and disappe
   await expect(entries.nth(1).locator('span')).toHaveText(firstPassword);
   for (let i = 0; i < 10; i += 1) await page.locator('#generate').click();
   await expect(entries).toHaveCount(10);
-  await page.locator('summary').click();
+  await page.locator('main > details > summary').click();
   await page.locator('#min-length').fill('0');
   await page.locator('#generate').click();
   await expect(entries).toHaveCount(10);

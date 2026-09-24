@@ -1,12 +1,12 @@
 # Passgen generation and browser design
 
-Date: 24 September 2026. Status: P0 implemented in this checkout; P1/P2 remain planned.
+Date: 24 September 2026. Status: listed F02/F03/F04/F05/F07/F08/F09/F10/F11/F12 work implemented in this checkout.
 
 This document defines the changes summarized in the [feature sheet](FEATURE_SHEET.md). The [changelog](../changelog.md) records design and implementation progress separately. The [README](../README.md) and [browser guide](../web/README.md) describe current behavior until a feature is implemented and verified.
 
 ## Scope and current baseline
 
-The original reviewed source was commit `50e8967` on `feat/browser-app`. It used Python secrets and browser Web Crypto, with a shared normalized dictionary of 7,775 words. Dictionary mode accepted 4–128 words, defaulted to four, and enforced a minimum length of 1–4,096 with no maximum output length. The P0 implementation now defaults to three requested words and enforces a 16–64 default range with a 128-character ceiling.
+The original reviewed source was commit `50e8967` on `feat/browser-app`. It used Python secrets and browser Web Crypto, with a shared normalized dictionary of 7,775 words. Dictionary mode accepted 4–128 words, defaulted to four, and enforced a minimum length of 1–4,096 with no maximum output length. The current implementation defaults to three requested words, enforces a 16–64 default range with a 128-character ceiling, and uses a 10,754-word effective dictionary.
 
 The original browser output was also the generation button. The P0 implementation separates Generate, output, and Copy; active output moves to capped Recent passwords after ten seconds or replacement. Recent passwords and imported settings remain page-memory only.
 
@@ -45,7 +45,7 @@ The retry and part budgets are internal constants, not new user controls. They l
 
 Keep the same candidate ordering across runtimes: select initial parts, apply optional substitutions, ensure a required digit, join with separators, append any length/case padding words, choose an eligible uppercase position if required, then validate the complete result. Padding words follow the same substitution/readability rules. Recheck the maximum after every insertion or append; casing and the current one-character substitutions do not change length.
 
-Configured entries remain unchanged apart from the existing policy normalization. Do not omit long entries from the configured set automatically: draw from the full normalized set and reject the candidate when necessary. Errors must not include personal entries or rejected password text. The current no-retry guarantee is intentionally replaced by a bounded retry contract; document that change when implemented.
+Configured entries remain unchanged apart from the existing policy normalization. Do not omit long entries from the configured set automatically: draw from the full normalized set and reject the candidate when necessary. Errors must not include personal entries or rejected password text. Generation now uses the bounded retry contract above.
 
 ### Failure and example behavior
 
@@ -68,11 +68,11 @@ Individual candidate word draws remain uniform. Conditioning success on a length
 
 Therefore, `k × log2(N)` may be explained only as an unrestricted initial-word model. It is not the actual entropy of an accepted bounded-length password or a guaranteed lower bound. Neither requested counts nor actual counts justify awarding padding, substitution, casing, or separator bits. No cracking-time estimate or strength score is introduced.
 
-Optional F02 help may show “at least 3 words from a list of 7,775 · 16–64 characters.” Explain that extra words may satisfy the minimum and that the length range limits which combinations can be returned. Freeze any generation-specific information with that output; settings summaries describe the next generation.
+F02 browser help shows the requested count and 10,754-word effective list size. It explains that extra words may satisfy the minimum and that the length range limits which combinations can be returned. The help describes the next generation, not a strength score for the current output.
 
 ## Interfaces and migration
 
-The configuration below is supported by the current parser:
+The legacy CLI configuration below remains supported by the Python parser:
 
 ```toml
 [password]
@@ -83,15 +83,29 @@ numbers = true
 symbols = true
 ```
 
-P0 adds `max_length` to Python Policy, browser defaults and validation, both TOML readers, and shared acceptance checks. It adds `--max-length` to the CLI and desktop startup flags alongside `--min-length`. Preserve CLI-over-config-over-default precedence. Validate the configuration with documented defaults, then validate the effective merged policy; an override must not hide malformed configuration.
+P0 adds `max_length` to Python Policy, browser defaults and validation, the CLI TOML reader, and shared acceptance checks. It adds `--max-length` to the CLI and desktop startup flags alongside `--min-length`. Preserve CLI-over-config-over-default precedence for `passgen generate`. Validate CLI configuration with documented defaults, then validate the effective merged policy; an override must not hide malformed configuration. The browser and desktop GUI do not parse TOML.
 
 Existing files omitting `max_length` use 64. Files with `min_length > 64` need an explicit valid maximum no greater than 128; existing lengths above 128 require revised settings. Invalid legacy configurations fail clearly and are not rewritten. The field is appended to preserve the positional order of existing Python Policy arguments, while new examples use keyword arguments. No version bump or release occurs as part of this implementation change.
 
-Change dictionary initialization, API defaults, CLI fallback/help, desktop startup, browser initialization, and Forget configuration to three requested words. Keep configured mode independent of this control. Preserve current minimum-length value 16 and composition defaults. F08 introduces `substitutions = false` and F09 introduces `easy_to_type = false` with matching validation and explicit controls when implemented; do not add speculative preset profiles.
+Dictionary initialization, API defaults, CLI fallback/help, desktop startup, and browser initialization use three requested words. Configured mode remains independent of this control. The minimum-length default remains 16. F08 adds `substitutions = false` and F09 adds `easy_to_type = false` with matching validation and explicit controls; no preset profiles are introduced.
 
 Browser and desktop show adjacent **Minimum characters** and **Maximum characters** number inputs. Browser settings remain collapsed below the main generation flow. Show range errors inline with clear labels; core validation still enforces the same rules when UI validation is bypassed. The browser summary defaults to “at least 3 words · 16–64 characters · mixed case · numbers · symbols.” Show the actual character count, such as “28 characters,” outside the selectable password text.
 
 Display limits are not implemented through truncating a field or limiting copied text. Wrap the complete result and reserve space for Copy/Copied at the card’s upper-right. The selected character range is the generation limit, independent of the output card’s dimensions.
+
+## F12: plain-text personal lists
+
+Three UTF-8 `.txt` lists supply personal vocabulary: Names/People, Places, and Things. Their filenames are `names.txt`, `places.txt`, and `things.txt`; the internal `people` category maps to Names. Use one entry per line, for example `Sam`, `New York`, and `Guitar` in their respective files. Blank lines are ignored. Spaces within an entry follow the existing normalization rule; punctuation is not interpreted as comments. The files ship with small public defaults so both interfaces have immediately visible values. The bundled dictionary remains separate.
+
+In browser Change settings, give each category a labeled local-file picker and an editable box initialized with its packaged TXT entries. Show the current source and its count of usable entries, plus a clear action. File reading stays in page memory and never uploads or stores replacement entries. Applying pasted edits replaces the selected category rather than appending silently; a successful file choice does the same and updates the visible box. A failed read or validation leaves the previous valid category in place and shows an error without echoing private entries. Refresh restores all three packaged defaults.
+
+Configured mode selects exactly one entry from each of the three categories in People → Places → Things order. All three packaged defaults are loaded initially. If a user clears a category, Generate explains which list is missing rather than silently restoring it. Dictionary mode needs none of them. Keep secure uniform selection within each category. Explain that the small public defaults and other familiar lists are easy to guess even when their entries are transformed.
+
+Apply the existing policy-aware entry normalization and ASCII/permitted-character validation before use. Trim lines, remove blank lines, and deduplicate **after** normalization; count effective entries, not raw lines. If two entries collapse to the same password fragment, give them one selection chance. Reject unsupported characters or entries that become empty under the current policy with a category-specific error; never include the private entry in diagnostics. Do not silently change the word count or maximum length to make a list fit. Existing bounded generation handles entries that exceed the selected range.
+
+Password requirements, word count, and character limits remain controls. TXT is the only personal-list path in the browser and desktop GUI. Python CLI supports `--people-file`, `--places-file`, and `--things-file`; the desktop has corresponding replacement pickers. Legacy TOML remains accepted only by `passgen generate`, where an explicit TXT file wins for its category. The GUI does not load an ambient `passgen.toml`, and `passgen gui --config` is invalid.
+
+Acceptance checks: packaged defaults are visible and immediately usable in both UIs; each valid TXT file and pasted list produces the same normalized category; missing categories block configured generation; an invalid replacement leaves the previous valid category unchanged and does not leak an entry in an error; duplicate normalized entries do not change selection weights; file replacement, clearing, and refresh have predictable state transitions; no TOML control or browser parser remains; Python and browser generation still use secure randomness and the existing length bounds. Verify no replacement list appears in network requests, browser storage, logs, or URLs.
 
 ## F04: browser layout
 
@@ -100,7 +114,7 @@ Order the browser controls below its short introduction as follows:
 1. Prominent Generate password button.
 2. At least 16 px separation, then a labeled, selectable, read-only output card with Copy in the upper-right corner.
 3. Character count, quiet expiry notice, and action status.
-4. Settings summary and collapsed Change settings disclosure, including range controls and local TOML import/forget actions.
+4. Settings summary and collapsed Change settings disclosure, including range controls and visible TXT/paste personal lists.
 5. Recent passwords, newest first, masked, and capped at the latest 10 entries.
 
 After the first successful generation, label the primary button Generate another and keep it in place, including after expiry. Refresh restores Generate password. Failed attempts do not change the label. A supporting icon cannot replace explicit text.
@@ -123,12 +137,12 @@ Keep transient state small: current generation ID/password/deadline, one active 
 | Generation failure | Show a safe error; retain the previous value and deadline, if any. |
 | Copy | Invoke only on explicit action; keep deadline unchanged. On confirmed success show Copied. On failure offer the selected read-only manual-copy field while the corresponding generation is active. |
 | Settings change | Update the next-generation summary only. |
-| Forget configuration | Drop imported sets, restore defaults, discard active output, cancel its timer, and invalidate callbacks. Recent passwords remain until refresh. |
-| Refresh | Clear output, imported settings, and Recent passwords; restore initial controls. |
+| Clear personal category | Remove that in-memory list and block configured generation until it is replaced or the page is refreshed. |
+| Refresh | Clear output, edited/imported lists, and Recent passwords; restore initial controls and packaged TXT defaults. |
 
 Show “Moves to recent passwords in 10 seconds” independently of Copy feedback. Label recent entries by generation order, such as Password 2. Each recent row starts with Copy, then Show/Hide, then the masked or revealed value. Keep “Shows the latest 10. Cleared when you refresh this page.” Recent passwords are capped at 10 entries; when an eleventh entry is added, drop the oldest entry automatically. No persistent storage, per-row deletion, or recovery service is introduced.
 
-Archive by generation ID with an idempotent operation, then enforce the 10-entry cap after adding the new entry. Expiry, regeneration, and forgetting invalidate stale timers and clipboard UI callbacks. A prior copy completion cannot restore expired plaintext, show a stale fallback, or enable Copy for an empty output. A clipboard write already requested may complete; the app does not promise clipboard erasure.
+Archive by generation ID with an idempotent operation, then enforce the 10-entry cap after adding the new entry. Expiry, regeneration, and refresh invalidate stale timers and clipboard UI callbacks. A prior copy completion cannot restore expired plaintext, show a stale fallback, or enable Copy for an empty output. A clipboard write already requested may complete; the app does not promise clipboard erasure.
 
 Reconcile deadlines on tab return and before acting on active output because suspended browsers may delay timers. Clear page state on page exit and also on restoration from a browser back/forward cache so navigation cannot resurrect retained passwords. Ordinary tab switching alone is not a reset; it triggers deadline reconciliation.
 
@@ -146,18 +160,18 @@ F10 preserves secure choices throughout and fresh independent generation per req
 
 ## F07: dictionary release
 
-Retain one shared `src/passgen/data/english.txt`, imported by the browser build. The expansion gate is at least 10,000 reviewed unique effective words, initially lowercase ASCII of 3–9 characters. Align validation and normalize/deduplicate before counting.
+The shared dictionary is `src/passgen/data/wordlist.txt`, imported by the browser build. It retains all 7,776 EFF long-list source words and adds filtered words from EFF's short lists and SCOWL level 10. The [manifest](../src/passgen/data/WORDLIST_MANIFEST.json) records source URLs/checksums, filter rules, contribution counts, effective count (10,754), and output checksum. Python and browser normalize/deduplicate before uniform sampling.
 
-Curate offline from sources with documented redistribution rights. Preserve EFF attribution for retained entries and separate notices for additions. Review familiarity, spelling, homophones, and offensive/sensitive terms; do not pad the count with duplicates or obscure variants. Publish source versions/URLs/licenses, changes, filter rules, rejected-entry counts, effective count, and digest in a build manifest. Do not label mixed-source additions as an EFF list.
+The source selection uses EFF's curated lists and SCOWL's common-word tier, then filters format, length, duplicates, and a documented sensitive-word exclusion set. EFF attribution and SCOWL's permission notice remain separate from the MIT code license. The list is not labeled as solely EFF data. Source downloads are verified by SHA-256 in [the offline build script](../tools/build_wordlist.py).
 
-Commonness affects membership, not sampling weights. Runtime word-pair filtering is not included. F11's final-length rejection is a separate explicit constraint. Verify Python/browser vocabulary identity and browser bundle/load impact before treating expansion as complete.
+Commonness affects membership, not sampling weights. Runtime word-pair filtering is not included. F11's final-length rejection is a separate explicit constraint. The Python and browser use the same source file; production-build checks verify inclusion.
 
 ## Implementation map and checks
 
 | Area | Change | Required evidence |
 |---|---|---|
-| Python policy/config/CLI/GUI | Range, three-word defaults, future transformation flags | Policy type/range boundaries, precedence, legacy migration, CLI exit/stdout behavior, GUI initialization/reset. |
-| Browser policy/config/generator | Same validation and bounded sampling | Boundary and deterministic sampler tests, parity fixtures, failing crypto behavior. |
+| Python policy/config/CLI/GUI | Range, three-word defaults, transformation flags, packaged TXT defaults and replacement inputs | Policy boundaries, CLI-only TOML precedence, CLI exit/stdout behavior, GUI initialization. |
+| Browser policy/generator | Same validation, packaged TXT defaults, and bounded sampling | Boundary and deterministic sampler tests, default/replacement list flows, failing crypto behavior. |
 | Both generators | Full-result bounds, independent separators, substitutions/readability | Never truncate; insertion/padding respects max; configured sets preserved; exact-length success/failure; attempts terminate. |
 | Browser HTML/controller/CSS | Main flow, range inputs, Copy overlay, lifecycle | First-use regeneration, exact copy, error preservation, no overlap, keyboard/touch/zoom/themes, timer/copy races. |
 | Data and distribution | Expanded list/manifest/notices | Count/license/provenance/normalization identity, installed Python data and browser bundle checks. |
@@ -165,12 +179,12 @@ Commonness affects membership, not sampling weights. Runtime word-pair filtering
 
 Use deterministic tiny vocabularies to exercise min/max boundary outputs, a final digit exceeding max, long configured entries, all attempts rejected, successful later attempts, and a proven impossible word count. A min-equals-max request must neither hang nor claim impossibility solely from random search exhaustion. Verify success accepts lengths exactly at both ends and rejects one character outside them.
 
-Lifecycle checks use a controlled clock for no-early-expiry, exactly-once movement, and the 10-entry Recent passwords cap; separately verify suspended-tab return and back/forward restoration. Include stale clipboard completion after expiry/regeneration/forgetting, manual-copy cleanup, recent-row copying while hidden, repeated identical generated strings, and refresh reset. Observe no password-bearing network/storage/log/URL writes.
+Lifecycle checks use a controlled clock for no-early-expiry, exactly-once movement, and the 10-entry Recent passwords cap; separately verify suspended-tab return and back/forward restoration. Include stale clipboard completion after expiry or regeneration, manual-copy cleanup, recent-row copying while hidden, repeated identical generated strings, and refresh reset. Observe no password-bearing network/storage/log/URL writes.
 
 Run the existing focused Python and JavaScript suites plus production-build browser tests when implementation lands. Add Firefox/Safari verification before claiming those behaviors across browsers. Documentation-only updates require link and diff checks, not generation tests. Deployment continues through the existing Pages workflow only as a separately authorized implementation/release action.
 
 ## Documentation maintenance
 
-Update docs in the same change that implements or alters behavior. The [README](../README.md) is the current user contract; the [browser guide](../web/README.md) describes browser operation; [SECURITY.md](../SECURITY.md) states actual boundaries. Keep future flags and examples labeled proposed until supported. Update `examples/passgen.toml` only alongside the implementation that accepts the new keys.
+Update docs in the same change that implements or alters behavior. The [README](../README.md) is the current user contract; the [browser guide](../web/README.md) describes browser operation; [SECURITY.md](../SECURITY.md) states actual boundaries. Keep future flags and examples labeled proposed until supported. Update `examples/passgen.toml` only alongside the CLI implementation that accepts the new keys, and keep packaged TXT defaults synchronized with their example copies.
 
 Record each delivered change under Unreleased in [changelog.md](../changelog.md), identifying what changed, compatibility effects, and verification. Move entries to a release section only when released. Update this design and the feature sheet when decisions change; do not imply that acceptance of a design means the implementation is complete. The original [proposal](../PROPOSAL.md) remains historical background with a link here.

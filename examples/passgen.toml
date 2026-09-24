@@ -4,6 +4,8 @@ max_length = 64
 mixed_case = true
 numbers = true
 symbols = true
+substitutions = false
+easy_to_type = false
 
 [sets]
 people = ["Sam", "Alex"]

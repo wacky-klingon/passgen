@@ -24,6 +24,7 @@ For each relevant implementation change:
 - Update [web/README.md](web/README.md) for actual browser controls, copy/expiry/history behavior, limits, and tested browsers.
 - Update [SECURITY.md](SECURITY.md) when generation, bounds, distribution claims, or retention change.
 - Update `examples/passgen.toml` only when the parser supports the added keys; keep current examples runnable.
+- Keep `examples/names.txt`, `examples/places.txt`, and `examples/things.txt` synchronized with the packaged defaults under `src/passgen/data/`.
 - Add an Unreleased entry to [changelog.md](changelog.md) describing implemented behavior, compatibility effects, and verification. Keep design-only entries distinct.
 - Keep the design and feature sheet aligned with decisions and actual progress. Retain the original proposal as historical context.
 
@@ -33,4 +34,4 @@ Documentation-only changes require checking Markdown links and `git diff --check
 
 Submit code contributions under the project's [MIT License](LICENSE). Only contribute material you have the right to license, and preserve applicable third-party notices.
 
-The bundled EFF word list is separately licensed under CC BY 3.0 US. Keep its [attribution and license reference](src/passgen/data/WORDLIST_LICENSE.txt), and document any changes to the data. Do not relabel third-party word-list data as MIT licensed.
+The bundled word list uses EFF and SCOWL sources with separate terms. Keep the [attribution and license reference](src/passgen/data/WORDLIST_LICENSE.txt), [SCOWL notice](src/passgen/data/SCOWL_COPYRIGHT.txt), and [source manifest](src/passgen/data/WORDLIST_MANIFEST.json) aligned with any data change. Do not relabel third-party word-list data as MIT licensed.

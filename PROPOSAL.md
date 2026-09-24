@@ -129,7 +129,7 @@ passgen/
 │   ├── generator.py
 │   ├── policy.py
 │   └── data/
-│       ├── english.txt
+│       ├── wordlist.txt
 │       └── WORDLIST_LICENSE.txt
 └── tests/
 ```
@@ -163,7 +163,7 @@ Personal names and familiar places are guessable, even after substitutions. Reco
 
 ## Implementation status
 
-The initial CLI and library are implemented with uv packaging, TOML configuration, both modes, bundled EFF data, tests, and a cross-platform CI definition. The README describes the current interface. No independent security audit has been performed.
+The initial CLI and library were implemented with uv packaging, TOML configuration, both modes, bundled EFF data, tests, and a cross-platform CI definition. The [README](README.md) describes the current interface, including later TXT inputs and expanded mixed-source dictionary. No independent security audit has been performed.
 
 Implementation refinements:
 

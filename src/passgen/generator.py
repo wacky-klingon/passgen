@@ -30,56 +30,50 @@ def replacements(letter: str, policy: Policy) -> str:
         c
         for c in LOOKALIKES.get(letter, "")
         if (policy.numbers and c in string.digits) or (policy.symbols and c in SYMBOLS)
+        if not policy.easy_to_type or c not in "01"
     )
 
 
 def stylize(word: str, policy: Policy) -> str:
     """Optionally replace one letter per word, preserving readability."""
     indices = [i for i, c in enumerate(word) if replacements(c, policy)]
-    if not indices or not secrets.randbelow(2):
+    if not policy.substitutions or not indices or not secrets.randbelow(2):
         return word
     i = secrets.choice(indices)
     return word[:i] + secrets.choice(replacements(word[i], policy)) + word[i + 1 :]
 
 
 def ensure_digit(parts: list[str], policy: Policy) -> None:
-    """Prefer a lookalike; otherwise insert a digit at a random word position."""
+    """Insert a random digit, unless enabled substitutions offer a lookalike."""
     if not policy.numbers or any(c in string.digits for part in parts for c in part):
         return
-    candidates = [
-        (i, j)
-        for i, part in enumerate(parts)
-        for j, c in enumerate(part)
-        if any(r in string.digits for r in LOOKALIKES.get(c, ""))
-    ]
+    candidates = (
+        [
+            (i, j)
+            for i, part in enumerate(parts)
+            for j, c in enumerate(part)
+            if any(r in string.digits for r in replacements(c, policy))
+        ]
+        if policy.substitutions
+        else []
+    )
     if candidates:
         i, j = secrets.choice(candidates)
         digit = secrets.choice(
-            "".join(c for c in LOOKALIKES[parts[i][j]] if c in string.digits)
+            "".join(c for c in replacements(parts[i][j], policy) if c in string.digits)
         )
         parts[i] = parts[i][:j] + digit + parts[i][j + 1 :]
     else:
         i, j = secrets.choice(
             [(i, j) for i, part in enumerate(parts) for j in range(len(part) + 1)]
         )
-        parts[i] = parts[i][:j] + secrets.choice(string.digits) + parts[i][j:]
+        digits = "23456789" if policy.easy_to_type else string.digits
+        parts[i] = parts[i][:j] + secrets.choice(digits) + parts[i][j:]
 
 
 def separator_source(enabled: bool):
-    remaining_symbols = []
-    previous_separator = ""
-
     def next_separator():
-        nonlocal previous_separator
-        if not enabled:
-            return ""
-        if not remaining_symbols:
-            remaining_symbols.extend(SYMBOLS)
-        candidates = [s for s in remaining_symbols if s != previous_separator]
-        separator = secrets.choice(candidates)
-        remaining_symbols.remove(separator)
-        previous_separator = separator
-        return separator
+        return secrets.choice(SYMBOLS) if enabled else ""
 
     return next_separator
 
@@ -100,7 +94,7 @@ def joined_length(parts: list[str], policy: Policy) -> int:
 
 @lru_cache(maxsize=1)
 def dictionary() -> tuple[str, ...]:
-    text = files("passgen").joinpath("data/english.txt").read_text(encoding="utf-8")
+    text = files("passgen").joinpath("data/wordlist.txt").read_text(encoding="utf-8")
     # Remove four hyphens and deduplicate the resulting words before selection.
     words = tuple(dict.fromkeys(word.replace("-", "") for word in text.splitlines()))
     if not words or any(not w.isascii() or not w.isalpha() for w in words):
@@ -140,11 +134,15 @@ def configured_sets(sets: object, policy: Policy) -> list[tuple[str, ...]]:
     return result
 
 
-def lower_bound_length(*, use_sets: bool, sets: object, policy: Policy, words: int) -> int:
+def lower_bound_length(
+    *, use_sets: bool, sets: object, policy: Policy, words: int
+) -> int:
     separator_length = 1 if policy.symbols else 0
     if use_sets:
         normalized_sets = configured_sets(sets, policy)
-        word_lengths = [min(len(entry) for entry in entries) for entries in normalized_sets]
+        word_lengths = [
+            min(len(entry) for entry in entries) for entries in normalized_sets
+        ]
     else:
         shortest = min(len(word) for word in dictionary())
         word_lengths = [shortest] * words
@@ -166,7 +164,10 @@ def generate(
     policy = policy or Policy()
     if type(words) is not int or not 3 <= words <= 128:
         raise ValueError("words must be an integer between 3 and 128")
-    if lower_bound_length(use_sets=use_sets, sets=sets, policy=policy, words=words) > policy.max_length:
+    if (
+        lower_bound_length(use_sets=use_sets, sets=sets, policy=policy, words=words)
+        > policy.max_length
+    ):
         raise ValueError("word count and character range cannot fit")
     normalized_sets = configured_sets(sets, policy) if use_sets else None
     words_source = dictionary()
@@ -184,7 +185,15 @@ def generate(
 
         while joined_length(parts, policy) < policy.min_length or (
             policy.mixed_case
-            and sum(c in string.ascii_lowercase for part in parts for c in part) < 2
+            and (
+                sum(c in string.ascii_lowercase for part in parts for c in part) < 2
+                or not any(
+                    c in string.ascii_lowercase
+                    and (not policy.easy_to_type or c not in "io")
+                    for part in parts
+                    for c in part
+                )
+            )
         ):
             if len(parts) >= MAX_PARTS:
                 break
@@ -199,7 +208,12 @@ def generate(
         password = join_parts(parts, policy)
         if policy.mixed_case:
             # Capitalize a random letter, keeping all other letters readable/lowercase.
-            indices = [i for i, c in enumerate(password) if c in string.ascii_lowercase]
+            indices = [
+                i
+                for i, c in enumerate(password)
+                if c in string.ascii_lowercase
+                and (not policy.easy_to_type or c not in "io")
+            ]
             if not indices:
                 continue
             i = secrets.choice(indices)

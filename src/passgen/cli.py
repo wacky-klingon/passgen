@@ -20,15 +20,16 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     options = argparse.ArgumentParser(add_help=False)
     add_options(options)
-    commands.add_parser(
+    generate_command = commands.add_parser(
         "generate", parents=[options], help="generate one password in the terminal"
     )
+    generate_command.add_argument("--config", type=Path)
     commands.add_parser(
         "gui", parents=[options], help="open the password window (default)"
     )
     args = parser.parse_args(argv)
     try:
-        config = load_config(args.config)
+        config = load_config(args.config) if args.command == "generate" else {}
         policy = load_policy(
             config,
             {
@@ -39,6 +40,8 @@ def main(argv: list[str] | None = None) -> int:
                     "mixed_case",
                     "numbers",
                     "symbols",
+                    "substitutions",
+                    "easy_to_type",
                 )
             },
         )
@@ -48,18 +51,31 @@ def main(argv: list[str] | None = None) -> int:
         if not 3 <= words <= 128:
             raise ValueError("words must be an integer between 3 and 128")
         if args.command == "gui":
+            from .personal_lists import default_personal_lists
+
+            sets = default_personal_lists(policy)
+        else:
+            sets = config.get("sets")
+        if any(
+            getattr(args, f"{name}_file") is not None
+            for name in ("people", "places", "things")
+        ):
+            from .personal_lists import load_personal_file
+
+            sets = dict(sets) if isinstance(sets, dict) else {}
+            for name in ("people", "places", "things"):
+                path = getattr(args, f"{name}_file")
+                if path is not None:
+                    sets[name] = load_personal_file(path, name, policy)
+        if args.command == "gui":
             try:
                 from .gui import launch
             except ImportError:
                 raise ValueError(
                     "Tkinter is unavailable. Install Python's Tk support or use 'passgen generate'."
                 ) from None
-            return launch(
-                policy, sets=config.get("sets"), use_sets=args.use_sets, words=words
-            )
-        password = generate(
-            policy, use_sets=args.use_sets, sets=config.get("sets"), words=words
-        )
+            return launch(policy, sets=sets, use_sets=args.use_sets, words=words)
+        password = generate(policy, use_sets=args.use_sets, sets=sets, words=words)
     except ValueError as error:
         parser.error(str(error))
     if args.use_sets:
@@ -73,7 +89,6 @@ def main(argv: list[str] | None = None) -> int:
 
 def add_options(command):
     """Share startup overrides between the window and headless command."""
-    command.add_argument("--config", type=Path)
     modes = command.add_mutually_exclusive_group()
     modes.add_argument("--use-sets", action="store_true")
     modes.add_argument("--no-sets", action="store_true")
@@ -85,7 +100,14 @@ def add_options(command):
         default=None,
         help="dictionary word count (3–128, default 3); dictionary mode only",
     )
-    for name in ("mixed-case", "numbers", "symbols"):
+    for name in ("mixed-case", "numbers", "symbols", "substitutions", "easy-to-type"):
         command.add_argument(
-            f"--{name}", action=argparse.BooleanOptionalAction, default=None
+            f"--{name}",
+            action=argparse.BooleanOptionalAction,
+            default=None,
+            dest=name.replace("-", "_"),
+        )
+    for name in ("people", "places", "things"):
+        command.add_argument(
+            f"--{name}-file", type=Path, help=f"one {name} entry per line"
         )

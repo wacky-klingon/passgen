@@ -1,10 +1,10 @@
 # passgen
 
-An offline Python desktop app, CLI, and library for memorable passwords, managed with **uv** and configured with **TOML**.
+An offline Python desktop app, CLI, and library for memorable passwords, managed with **uv**. Personal lists use three plain-text files. Legacy TOML configuration remains available to the CLI only.
 
 Status: initial implementation, with automated tests; not independently security-audited.
 
-The [design document](docs/DESIGN.md) and [feature sheet](docs/FEATURE_SHEET.md) describe the current P0 design and later planned work. Follow the [changelog](changelog.md) for progress.
+The [design document](docs/DESIGN.md) and [feature sheet](docs/FEATURE_SHEET.md) describe the implemented design. Follow the [changelog](changelog.md) for progress.
 
 ## Browser version (initial implementation)
 
@@ -16,7 +16,7 @@ npm ci
 npm run dev
 ```
 
-It supports the same generation modes and requirements, local-only TOML import, minimum/maximum character controls, a separate Generate button, and a Copy button inside the output card. Generation does not copy automatically. Active passwords show a character count and countdown, then move to masked Recent passwords after ten seconds or when replaced; the list keeps the latest 10, offers Copy and Show/Hide per row, and clears on refresh. No backend or configuration editor. The Python app remains supported below. See the [browser documentation](web/README.md) for testing and GitHub Pages deployment, or open the [browser app](https://wacky-klingon.github.io/passgen/).
+It starts with visible default Names, Places, and Things entries. Each list can be edited, pasted, or replaced with a local TXT file; there is no TOML control. Generate and Copy are separate. Active passwords show a character count and countdown, then move to masked Recent passwords after the selected 10, 30, or 60 seconds or when replaced. The latest 10 recent entries offer Copy and Show/Hide; refresh clears passwords and restores the default lists. See the [browser documentation](web/README.md) for testing and GitHub Pages deployment, or open the [browser app](https://wacky-klingon.github.io/passgen/).
 
 ## Quick start
 
@@ -28,8 +28,8 @@ uv sync
 # Default entry point: open the desktop window
 uv run passgen
 
-# Open with configured sets and startup overrides
-uv run passgen --config examples/passgen.toml --use-sets --no-numbers
+# Open the GUI with its default TXT lists and startup overrides
+uv run passgen --use-sets --no-numbers
 
 # CLI: at least three English dictionary words
 uv run passgen generate
@@ -39,6 +39,9 @@ uv run passgen generate --no-sets --words 6
 
 # One entry from each configured set: people, places, things
 uv run passgen generate --config examples/passgen.toml --use-sets
+
+# Or provide one-entry-per-line TXT files
+uv run passgen generate --use-sets --people-file examples/names.txt --places-file examples/places.txt --things-file examples/things.txt
 
 # Bypass personal sets while retaining shared password settings
 uv run passgen generate --no-sets --min-length 24 --max-length 64
@@ -52,17 +55,17 @@ Installation needs dependencies/build tooling; password generation itself makes 
 
 ## Desktop UI
 
-`uv run passgen` (or `uv run python -m passgen`) opens the Tkinter window. `passgen gui` also works. The three toggles enable/disable mixed case, numbers, and symbols for the next password. Choose English words or configured sets and adjust minimum and maximum length; word count is disabled in configured mode.
+`uv run passgen` (or `uv run python -m passgen`) opens the Tkinter window. `passgen gui` also works. The default `names.txt`, `places.txt`, and `things.txt` lists are loaded automatically; their filenames and counts appear in the window. Replace any category with its TXT button. Choose English words or configured sets and adjust minimum and maximum length; word count is disabled in configured mode. The GUI does not read TOML configuration.
 
 **Click the read-only password area to generate a new password and copy it to the clipboard.** With the area focused, Enter or Space does the same. Invalid settings are shown in the status line without replacing the previous password or clipboard. Clipboard failures are reported rather than claiming success. No password is generated or copied merely by opening the window or changing a setting.
 
-The same startup flags accepted by `generate` initialize the UI. Changes in the window are temporary: there is no config editor and nothing is written to TOML. `--words` is rejected with `--use-sets`.
+The same startup flags accepted by `generate` initialize the UI. The three **Load TXT** buttons replace one personal category at a time; changes in the window are temporary. `--words` is rejected with `--use-sets`.
 
 Tkinter must be available in the Python interpreter used by uv. If it is missing, install your platform's matching Python Tk support (for example `python3-tk` for many Linux system Pythons) and select that interpreter with uv. Without a graphical display, use `passgen generate`; CLI operation does not import Tkinter.
 
 Passwords remain visible until replaced or the window closes. Clipboard history may retain copied values; clipboard persistence after closing the app depends on your operating system.
 
-## Configuration
+## CLI configuration
 
 Create `passgen.toml` in your working directory or select a file with `--config`:
 
@@ -73,6 +76,8 @@ max_length = 64
 mixed_case = true
 numbers = true
 symbols = true
+substitutions = false
+easy_to_type = false
 
 [sets]
 people = ["Sam", "Alex"]
@@ -80,15 +85,17 @@ places = ["New York", "London"]
 things = ["Guitar", "Coffee"]
 ```
 
-CLI flags override valid configuration values, which override defaults. No default file is required for dictionary mode. Malformed TOML and invalid shared settings are errors even in bypass mode.
+This TOML path is retained for CLI compatibility. CLI flags override valid configuration values, which override defaults. No default file is required for dictionary mode. Malformed TOML and invalid shared settings are errors even in bypass mode. The web and desktop interfaces use TXT lists and do not expose or load TOML.
+
+Each personal TXT file uses UTF-8 with one entry per line. Blank lines are ignored. `--people-file`, `--places-file`, and `--things-file` override the matching legacy CLI TOML category; all three categories need a usable entry for configured mode. The browser also accepts pasted lines and starts with the packaged defaults. Lists stay local and are never written back to files.
 
 - `--use-sets` and `--no-sets` are mutually exclusive; dictionary mode is the default.
 - Configured mode selects exactly one entry from each set. Missing/empty sets are errors.
 - Spaces are removed from configured entries. Unsupported non-ASCII characters are rejected. Disabled digits/symbols are removed; entries that become empty are rejected.
 - Minimum and maximum length define an inclusive character range from 1 to 128, with defaults of 16–64. Additional random dictionary words fill short results when they can still fit. Generation fails clearly rather than truncating, dropping requested words, or silently relaxing settings.
 - Enabled options guarantee both letter cases, at least one digit, and/or at least one symbol. Disabled options produce lowercase letters only, no digits, and/or no symbols, respectively.
-- Symbol alphabet: `!@#$%&*+-_=?`. Each join uses a randomly selected separator without reuse until the alphabet is exhausted. Longer passwords start a fresh pool, never repeating the previous separator. This applies to word joins and length-padding words. Symbols inside words (existing or substituted) are not separators and may repeat.
-- Both modes use light, randomized lookalike substitutions: `a → 4/@`, `b → 8`, `e → 3`, `g → 9`, `i → 1/!`, `l → 1`, `o → 0`, `s → 5/$`, `t → 7/+`, `z → 2`. Only enabled character types are used. There is no fixed numeric suffix: if a digit is still required, replace a random suitable letter or, if none exists, insert a digit at a random position. Existing digits already satisfy the requirement.
+- Symbol alphabet: `!@#$%&*+-_=?`. Each word gap draws independently; separators may repeat.
+- Lookalike substitutions are optional and off by default. Enable them with `--substitutions` or the UI control. When disabled, a required digit is inserted at a random word position. There is no fixed numeric suffix. The **Easy to type** option (`--easy-to-type`) avoids introducing `0`, `1`, uppercase `I`, and uppercase `O`; characters already present in personal entries remain.
 - Dictionary mode uses at least 3–128 requested words (`--words`), adding more whole words if needed for length. Configured mode does not accept a custom word count.
 - CLI mode prints one password to stdout; errors and configured-mode security warnings go to stderr. The GUI displays these locally without printing passwords.
 
@@ -111,7 +118,7 @@ Random selections use Python's `secrets` module or browser Web Crypto. There is 
 
 Personal names and places remain guessable despite substitutions. Prefer dictionary mode with **six or more words** for sensitive accounts. Three words are the current implementation's usability default, not a universal strength guarantee. Length and character variety alone do not establish security.
 
-The bundled EFF long list contains 7,776 source words. Removing hyphens and deduplicating at runtime yields **7,775** uniformly selectable words. Casing and light substitutions are not presented as meaningful strength guarantees.
+The bundled [wordlist.txt](src/passgen/data/wordlist.txt) combines EFF and SCOWL sources into **10,754** uniformly selectable words after normalization and deduplication. See the [source manifest](src/passgen/data/WORDLIST_MANIFEST.json) and [licensing notice](src/passgen/data/WORDLIST_LICENSE.txt). Casing and substitutions are not presented as meaningful strength guarantees.
 
 See [SECURITY.md](SECURITY.md) for limitations.
 
@@ -140,4 +147,4 @@ The project code is licensed under the [MIT License](LICENSE). You may use, modi
 
 MIT was chosen for its simplicity and permissive reuse terms.
 
-The bundled EFF word-list data is **separately licensed under CC BY 3.0 US**, not MIT. Redistributing it requires preserving EFF attribution, the license reference, and notices of modifications. See [word-list attribution and licensing](src/passgen/data/WORDLIST_LICENSE.txt).
+The bundled word-list data has **separate EFF and SCOWL terms**, not the code's MIT license. Redistributing it requires preserving the [word-list attribution and licensing](src/passgen/data/WORDLIST_LICENSE.txt) and [SCOWL notice](src/passgen/data/SCOWL_COPYRIGHT.txt).

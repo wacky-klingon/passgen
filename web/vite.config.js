@@ -19,7 +19,8 @@ export default defineConfig(({ command }) => ({
       for (const [fileName, sourcePath] of [
         ['LICENSE.txt', '../LICENSE'],
         ['WORDLIST_LICENSE.txt', '../src/passgen/data/WORDLIST_LICENSE.txt'],
-        ['TOML_LICENSE.txt', './node_modules/smol-toml/LICENSE'],
+        ['SCOWL_COPYRIGHT.txt', '../src/passgen/data/SCOWL_COPYRIGHT.txt'],
+        ['WORDLIST_MANIFEST.json', '../src/passgen/data/WORDLIST_MANIFEST.json'],
       ]) {
         this.emitFile({
           type: 'asset', fileName,

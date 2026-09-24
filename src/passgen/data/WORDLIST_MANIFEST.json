@@ -1,0 +1,74 @@
+{
+  "sources": {
+    "eff_long": {
+      "url": "https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt",
+      "sha256": "addd35536511597a02fa0a9ff1e5284677b8883b83e986e43f15a3db996b903e"
+    },
+    "eff_short_1": {
+      "url": "https://www.eff.org/files/2016/09/08/eff_short_wordlist_1.txt",
+      "sha256": "8f5ca830b8bffb6fe39c9736c024a00a6a6411adb3f83a9be8bfeeb6e067ae69"
+    },
+    "eff_short_2": {
+      "url": "https://www.eff.org/files/2016/09/08/eff_short_wordlist_2_0.txt",
+      "sha256": "22b45c52e0bd0bbf03aa522240b111eb4c7c0c1d86c4e518e1be2a7eb2a625e4"
+    },
+    "scowl": {
+      "url": "https://downloads.sourceforge.net/project/wordlist/SCOWL/2020.12.07/scowl-2020.12.07.zip",
+      "sha256": "dc3435e1cb56f3394aea91b5d2ab5d10d80c98bc7dd88c3fccb7348f6ab913a0"
+    }
+  },
+  "source_words": 7776,
+  "added_by_source": {
+    "eff_short_1": 199,
+    "eff_short_2": 330,
+    "scowl": 2450
+  },
+  "rejected_by_source": {
+    "eff_short_1": {
+      "format_or_length": 0,
+      "sensitive": 0,
+      "duplicates": 1097
+    },
+    "eff_short_2": {
+      "format_or_length": 124,
+      "sensitive": 0,
+      "duplicates": 842
+    },
+    "scowl": {
+      "format_or_length": 946,
+      "sensitive": 10,
+      "duplicates": 1003
+    }
+  },
+  "filter": "ASCII lowercase letters, 3-9 characters after removing hyphens; omit listed sensitive words; deduplicate after normalization",
+  "sensitive_exclusions": [
+    "abuse",
+    "abused",
+    "abuses",
+    "abusive",
+    "assault",
+    "assaults",
+    "death",
+    "died",
+    "dying",
+    "kill",
+    "killed",
+    "killing",
+    "kills",
+    "murder",
+    "murdered",
+    "murders",
+    "rape",
+    "sex",
+    "suicide",
+    "terror",
+    "victim",
+    "victims",
+    "violence",
+    "violent",
+    "war",
+    "wars"
+  ],
+  "effective_words": 10754,
+  "output_sha256": "89a4876318f98fc81b2a56a013414b2b063a01fd130fff938d63962bd02240de"
+}

@@ -21,6 +21,8 @@ def window():
         "mixed_case": True,
         "numbers": False,
         "symbols": True,
+        "substitutions": False,
+        "easy_to_type": False,
     }.items():
         setattr(app, name, Mock(get=Mock(return_value=value)))
     app.sets = {"people": ["Sam"]}
@@ -29,6 +31,7 @@ def window():
     app.show_text = Mock()
     app.word_input = Mock()
     app.mode_note = Mock()
+    app.list_status = {name: Mock() for name in ("people", "places", "things")}
     return app
 
 
@@ -87,16 +90,42 @@ def test_clipboard_error_is_reported(monkeypatch):
     assert "clipboard is unavailable" in app.status.set.call_args.args[0]
 
 
+def test_txt_picker_replaces_only_selected_category(monkeypatch, tmp_path):
+    app = window()
+    good = tmp_path / "places.txt"
+    good.write_text("New York\nLondon\n")
+    monkeypatch.setattr(gui.filedialog, "askopenfilename", lambda **kwargs: str(good))
+    app.load_list("places")
+    assert app.sets == {"people": ["Sam"], "places": ["New York", "London"]}
+    assert (
+        "places.txt: New York, London (2 usable)"
+        in app.list_status["places"].set.call_args.args[0]
+    )
+    assert "2 usable places" in app.status.set.call_args.args[0]
+    bad = tmp_path / "bad.txt"
+    bad.write_text("Private東京\n")
+    monkeypatch.setattr(gui.filedialog, "askopenfilename", lambda **kwargs: str(bad))
+    app.load_list("places")
+    assert app.sets["places"] == ["New York", "London"]
+    assert "Private" not in app.status.set.call_args.args[0]
+
+
 @pytest.mark.parametrize(
     "args", [[], ["gui"], ["--no-sets", "--no-numbers", "--words", "6"]]
 )
 def test_default_entrypoint_opens_gui(args, monkeypatch, tmp_path, capsys):
     monkeypatch.chdir(tmp_path)
+    (tmp_path / "passgen.toml").write_text("[invalid TOML")
     launch = Mock(return_value=0)
     monkeypatch.setattr(gui, "launch", launch)
     assert main(args) == 0
     launch.assert_called_once()
     assert capsys.readouterr().out == ""
+    assert launch.call_args.kwargs["sets"] == {
+        "people": ["Sam", "Alex"],
+        "places": ["New York", "London"],
+        "things": ["Guitar", "Coffee"],
+    }
     if "--no-numbers" in args:
         assert not launch.call_args.args[0].numbers
         assert launch.call_args.kwargs["words"] == 6
@@ -106,3 +135,10 @@ def test_display_error(monkeypatch):
     monkeypatch.setattr(gui.tk, "Tk", Mock(side_effect=gui.tk.TclError()))
     with pytest.raises(ValueError, match="Cannot open a window"):
         gui.launch(Policy())
+
+
+def test_gui_does_not_accept_toml_config(capsys):
+    with pytest.raises(SystemExit) as error:
+        main(["gui", "--config", "personal.toml"])
+    assert error.value.code == 2
+    assert "unrecognized arguments: --config" in capsys.readouterr().err

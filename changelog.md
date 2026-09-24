@@ -4,6 +4,19 @@ Track design changes and implemented behavior separately. See the [design docume
 
 ## Unreleased
 
+### Implemented — 2026-09-24 (later design features)
+
+- Added packaged `names.txt`, `places.txt`, and `things.txt` defaults plus separate local TXT replacement inputs in the browser, CLI, and desktop app. The browser shows the default values in editable boxes. TOML was removed from the web and desktop GUI; legacy CLI-only TOML remains, with explicit TXT files overriding matching categories.
+- Renamed the bundled dictionary to `wordlist.txt` and expanded it to 10,754 normalized unique words from EFF and SCOWL sources, with a source manifest, reproducible offline build script, and separate notices.
+- Changed separators to independent secure draws with repeats allowed. Added optional substitutions, off by default, and an Easy to type option that avoids introducing `0`, `1`, `I`, or `O`.
+- Added browser word-selection help and optional 30/60-second visibility alongside the 10-second default.
+- Validated with Python, JavaScript, Chromium browser, lint, and production-build checks.
+
+### Design proposal — 2026-09-24
+
+- Designed separate People, Places, and Things TXT/paste inputs as the personal-list path. The later implementation entry records the final decision to load visible TXT defaults and remove TOML from both UIs.
+- Proposed renaming the bundled dictionary data file from `english.txt` to `wordlist.txt`; the later entry above records its implementation.
+
 ### Implemented — 2026-09-24
 
 - Implemented P0 range behavior across Python and browser generation: default 16–64 characters, 128-character ceiling, `max_length` / `--max-length`, three requested dictionary words by default, bounded attempts, and explicit failures without truncation.
@@ -24,4 +37,4 @@ Validation: `poetry run pytest`, `poetry run ruff check .`, `npm test`, and `npm
 - Linked README, browser guide, security notes, contributing guidance, and the original proposal to the design. Corrected current browser copying/history descriptions and documented how to keep docs updated with implementation.
 - Validation: Markdown links and diff checks. No application code, live configuration, dictionary, or deployment changes; no application tests run for this documentation-only change.
 
-The Documentation entry records the design-only stage. The Implemented entry records the P0 code, docs, and validation that followed. Add future implementation and compatibility entries as remaining features land.
+The Documentation entry records the design-only stage. The Implemented entries record the code, docs, and validation that followed.

@@ -38,7 +38,7 @@ def test_three_dictionary_words(monkeypatch):
 
 def test_dictionary():
     words = dictionary()
-    assert len(words) >= 7700
+    assert len(words) >= 10000
     assert len(words) == len(set(words))
     assert all(w.isascii() and w.isalpha() and w.islower() for w in words)
 

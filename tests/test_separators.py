@@ -1,39 +1,22 @@
-import pytest
+"""Separator draws are independent and may repeat."""
 
 from passgen import Policy, generate
+from passgen.generator import separator_source
 from passgen.policy import SYMBOLS
 
 
-@pytest.mark.parametrize("use_sets", [False, True])
-@pytest.mark.parametrize("numbers", [False, True])
-def test_unique_separators(monkeypatch, use_sets, numbers):
+def test_independent_separators_can_repeat(monkeypatch):
     monkeypatch.setattr("passgen.generator.secrets.choice", lambda seq: seq[0])
-    monkeypatch.setattr("passgen.generator.stylize", lambda word, policy: word)
+    next_separator = separator_source(True)
+    assert [next_separator() for _ in range(4)] == [SYMBOLS[0]] * 4
+    assert separator_source(False)() == ""
+
+
+def test_generation_uses_repeated_separators(monkeypatch):
+    monkeypatch.setattr("passgen.generator.secrets.choice", lambda seq: seq[0])
     password = generate(
-        Policy(1, False, numbers, True),
-        use_sets=use_sets,
+        Policy(1, False, False, True),
+        use_sets=True,
         sets={"people": ["Sam"], "places": ["York"], "things": ["Book"]},
     )
-    separators = [c for c in password if c in SYMBOLS]
-    assert len(separators) == 2
-    assert len(set(separators)) == len(separators)
-
-
-def test_long_password_recycles_pool_without_consecutive_repeats(monkeypatch):
-    # Taking the last candidate exercises the pool-reset boundary.
-    monkeypatch.setattr("passgen.generator.secrets.choice", lambda seq: seq[-1])
-    monkeypatch.setattr("passgen.generator.stylize", lambda word, policy: word)
-    policy = Policy(100, False, True, True, 128)
-    password = generate(policy)
-    assert policy.accepts(password)
-    separators = [c for c in password if c in SYMBOLS]
-    assert len(separators) > len(SYMBOLS)
-    assert all(a != b for a, b in zip(separators, separators[1:]))
-    for i in range(0, len(separators), len(SYMBOLS)):
-        group = separators[i : i + len(SYMBOLS)]
-        assert len(group) == len(set(group))
-
-
-def test_symbols_disabled():
-    password = generate(Policy(100, symbols=False, max_length=128))
-    assert not any(c in SYMBOLS for c in password)
+    assert password == "sam!york!book"
