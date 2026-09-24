@@ -16,7 +16,7 @@ SETS = {"people": ["Sam"], "places": ["New York"], "things": ["Guitar"]}
     "mixed,numbers,symbols,use_sets", list(itertools.product([False, True], repeat=4))
 )
 def test_all_policies(mixed, numbers, symbols, use_sets):
-    policy = Policy(100, mixed, numbers, symbols)
+    policy = Policy(100, mixed, numbers, symbols, 128)
     assert policy.accepts(generate(policy, use_sets=use_sets, sets=SETS))
 
 
@@ -28,10 +28,10 @@ def test_exactly_one_per_set(monkeypatch):
     )
 
 
-def test_four_dictionary_words(monkeypatch):
+def test_three_dictionary_words(monkeypatch):
     monkeypatch.setattr("passgen.generator.secrets.choice", lambda seq: seq[0])
     assert (
-        generate(Policy(1, False, False, False), sets="invalid") == dictionary()[0] * 4
+        generate(Policy(1, False, False, False), sets="invalid") == dictionary()[0] * 3
     )
     assert generate(Policy(1, False, False, False), words=6) == dictionary()[0] * 6
 
@@ -77,7 +77,8 @@ def test_nonletter_sets():
     [
         {"min_length": 0},
         {"min_length": True},
-        {"min_length": 4097},
+        {"max_length": 129},
+        {"min_length": 65},
         {"numbers": "yes"},
         {"symbols": 1},
         {"mixed_case": None},
@@ -93,7 +94,7 @@ def test_config_precedence():
         {"password": {"min_length": 20, "symbols": False}},
         {"min_length": 30, "numbers": None},
     )
-    assert policy == Policy(30, True, True, False)
+    assert policy == Policy(30, True, True, False, 64)
     with pytest.raises(ValueError):
         load_policy({"password": {"numbers": "yes"}}, {"numbers": True})
     with pytest.raises(ValueError):
@@ -138,7 +139,9 @@ def test_cli_configured(tmp_path, capsys):
     [
         ["--use-sets", "--no-sets"],
         ["--min-length", "0"],
-        ["--words", "3"],
+        ["--max-length", "129"],
+        ["--min-length", "20", "--max-length", "10"],
+        ["--words", "2"],
         ["--use-sets", "--words", "6"],
     ],
 )

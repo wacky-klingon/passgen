@@ -5,6 +5,9 @@ const LOOKALIKES = {
   a: '4@', b: '8', e: '3', g: '9', i: '1!', l: '1', o: '0', s: '5$', t: '7+', z: '2',
 };
 const SET_NAMES = ['people', 'places', 'things'];
+const DEFAULT_WORDS = 3;
+const MAX_ATTEMPTS = 128;
+const MAX_PARTS = 128;
 
 export function parseDictionary(text) {
   const words = [...new Set(text.trim().split(/\r?\n/).map((word) => word.replaceAll('-', '')))];
@@ -82,31 +85,68 @@ export function separatorSource(enabled, choose = secureChoose) {
   };
 }
 
-export function generate({ policy: settings = {}, useSets = false, sets, words = 4, dictionary }, choose = secureChoose) {
+function joinParts(parts, policy, choose) {
+  const separator = separatorSource(policy.symbols, choose);
+  return parts.slice(1).reduce((password, part) => password + separator() + part, parts[0]);
+}
+
+function joinedLength(parts, policy) {
+  if (!parts.length) return 0;
+  return parts.reduce((total, part) => total + part.length, 0) + (policy.symbols ? parts.length - 1 : 0);
+}
+
+function lowerBoundLength({ useSets, sets, policy, words, dictionary }) {
+  const lengths = useSets
+    ? configuredSets(sets, policy).map((entries) => Math.min(...entries.map((entry) => entry.length)))
+    : Array.from({ length: words }, () => Math.min(...dictionary.map((word) => word.length)));
+  return lengths.reduce((total, length) => total + length, 0) + (policy.symbols ? lengths.length - 1 : 0);
+}
+
+export function generate({ policy: settings = {}, useSets = false, sets, words = DEFAULT_WORDS, dictionary }, choose = secureChoose) {
   const policy = validatePolicy(settings);
-  if (!Number.isInteger(words) || words < 4 || words > 128) {
-    throw new Error('Word count must be an integer between 4 and 128.');
+  if (!Number.isInteger(words) || words < 3 || words > 128) {
+    throw new Error('Word count must be an integer between 3 and 128.');
   }
   if (!Array.isArray(dictionary) || !dictionary.length
     || dictionary.some((word) => typeof word !== 'string' || !/^[a-z]{2,}$/.test(word))) {
     throw new Error('Dictionary is unavailable or invalid.');
   }
-  let parts = useSets
-    ? configuredSets(sets, policy).map((entries) => choose(entries))
-    : Array.from({ length: words }, () => choose(dictionary));
-  parts = parts.map((part) => stylize(part, policy, choose));
-  ensureDigit(parts, policy, choose);
-  const separator = separatorSource(policy.symbols, choose);
-  let password = parts[0];
-  for (const part of parts.slice(1)) password += separator() + part;
-  while (password.length < policy.min_length
-    || (policy.mixed_case && indices(password, (c) => /[a-z]/.test(c)).length < 2)) {
-    password += separator() + stylize(choose(dictionary), policy, choose);
+  if (lowerBoundLength({ useSets, sets, policy, words, dictionary }) > policy.max_length) {
+    throw new Error('Word count and character range cannot fit.');
   }
-  if (policy.mixed_case) {
-    const i = choose(indices(password, (c) => /[a-z]/.test(c)));
-    password = replaceAt(password, i, password[i].toUpperCase());
+  const normalizedSets = useSets ? configuredSets(sets, policy) : undefined;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    let parts = useSets
+      ? normalizedSets.map((entries) => choose(entries))
+      : Array.from({ length: words }, () => choose(dictionary));
+    parts = parts.map((part) => stylize(part, policy, choose));
+    ensureDigit(parts, policy, choose);
+    if (joinedLength(parts, policy) > policy.max_length) continue;
+
+    while (joinedLength(parts, policy) < policy.min_length
+      || (policy.mixed_case && ((parts.join('').match(/[a-z]/g)?.length ?? 0) < 2))) {
+      if (parts.length >= MAX_PARTS) {
+        parts = [];
+        break;
+      }
+      const candidateParts = [...parts, stylize(choose(dictionary), policy, choose)];
+      if (joinedLength(candidateParts, policy) > policy.max_length) {
+        parts = [];
+        break;
+      }
+      parts = candidateParts;
+    }
+    if (!parts.length) continue;
+
+    let password = joinParts(parts, policy, choose);
+    if (policy.mixed_case) {
+      const lowerIndices = indices(password, (c) => /[a-z]/.test(c));
+      if (!lowerIndices.length) continue;
+      const i = choose(lowerIndices);
+      password = replaceAt(password, i, password[i].toUpperCase());
+    }
+    if (accepts(password, policy)) return password;
   }
-  if (!accepts(password, policy)) throw new Error('Generated password failed policy validation.');
-  return password;
+  throw new Error('Could not generate a password within these limits. Increase maximum length, lower minimum length, or adjust the word count.');
 }

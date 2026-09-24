@@ -15,6 +15,7 @@ def window():
     app = gui.PasswordWindow.__new__(gui.PasswordWindow)
     for name, value in {
         "min_length": "24",
+        "max_length": "64",
         "words": "6",
         "use_sets": False,
         "mixed_case": True,
@@ -54,7 +55,7 @@ def test_configured_disables_and_ignores_word_count(monkeypatch):
     app.update_mode()
     app.word_input.configure.assert_called_with(state="disabled")
     app.generate_and_copy()
-    assert generate.call_args.kwargs["words"] == 4
+    assert generate.call_args.kwargs["words"] == 3
     app.use_sets.get.return_value = False
     app.update_mode()
     app.word_input.configure.assert_called_with(state="normal")

@@ -8,6 +8,9 @@ from importlib.resources import files
 from .policy import SYMBOLS, Policy
 
 SET_NAMES = ("people", "places", "things")
+DEFAULT_WORDS = 3
+MAX_ATTEMPTS = 128
+MAX_PARTS = 128
 LOOKALIKES = {
     "a": "4@",
     "b": "8",
@@ -62,6 +65,39 @@ def ensure_digit(parts: list[str], policy: Policy) -> None:
         parts[i] = parts[i][:j] + secrets.choice(string.digits) + parts[i][j:]
 
 
+def separator_source(enabled: bool):
+    remaining_symbols = []
+    previous_separator = ""
+
+    def next_separator():
+        nonlocal previous_separator
+        if not enabled:
+            return ""
+        if not remaining_symbols:
+            remaining_symbols.extend(SYMBOLS)
+        candidates = [s for s in remaining_symbols if s != previous_separator]
+        separator = secrets.choice(candidates)
+        remaining_symbols.remove(separator)
+        previous_separator = separator
+        return separator
+
+    return next_separator
+
+
+def join_parts(parts: list[str], policy: Policy) -> str:
+    next_separator = separator_source(policy.symbols)
+    password = parts[0]
+    for part in parts[1:]:
+        password += next_separator() + part
+    return password
+
+
+def joined_length(parts: list[str], policy: Policy) -> int:
+    if not parts:
+        return 0
+    return sum(len(part) for part in parts) + (len(parts) - 1 if policy.symbols else 0)
+
+
 @lru_cache(maxsize=1)
 def dictionary() -> tuple[str, ...]:
     text = files("passgen").joinpath("data/english.txt").read_text(encoding="utf-8")
@@ -104,57 +140,73 @@ def configured_sets(sets: object, policy: Policy) -> list[tuple[str, ...]]:
     return result
 
 
+def lower_bound_length(*, use_sets: bool, sets: object, policy: Policy, words: int) -> int:
+    separator_length = 1 if policy.symbols else 0
+    if use_sets:
+        normalized_sets = configured_sets(sets, policy)
+        word_lengths = [min(len(entry) for entry in entries) for entries in normalized_sets]
+    else:
+        shortest = min(len(word) for word in dictionary())
+        word_lengths = [shortest] * words
+    return sum(word_lengths) + separator_length * (len(word_lengths) - 1)
+
+
 def generate(
     policy: Policy | None = None,
     *,
     use_sets: bool = False,
     sets: object = None,
-    words: int = 4,
+    words: int = DEFAULT_WORDS,
 ) -> str:
-    """Select one entry per set, or at least four dictionary words.
+    """Select one entry per set, or at least three dictionary words.
 
     Additional dictionary words satisfy length and case requirements without
-    reselecting configured entries. There is no generation retry loop.
+    reselecting configured entries. Bounded retries discard over-limit candidates.
     """
     policy = policy or Policy()
-    if type(words) is not int or not 4 <= words <= 128:
-        raise ValueError("words must be an integer between 4 and 128")
-    if use_sets:
-        parts = [secrets.choice(entries) for entries in configured_sets(sets, policy)]
-    else:
-        parts = [secrets.choice(dictionary()) for _ in range(words)]
+    if type(words) is not int or not 3 <= words <= 128:
+        raise ValueError("words must be an integer between 3 and 128")
+    if lower_bound_length(use_sets=use_sets, sets=sets, policy=policy, words=words) > policy.max_length:
+        raise ValueError("word count and character range cannot fit")
+    normalized_sets = configured_sets(sets, policy) if use_sets else None
+    words_source = dictionary()
 
-    parts = [stylize(part, policy) for part in parts]
-    ensure_digit(parts, policy)
+    for _ in range(MAX_ATTEMPTS):
+        if use_sets:
+            parts = [secrets.choice(entries) for entries in normalized_sets]
+        else:
+            parts = [secrets.choice(words_source) for _ in range(words)]
 
-    remaining_symbols = []
-    previous_separator = ""
+        parts = [stylize(part, policy) for part in parts]
+        ensure_digit(parts, policy)
+        if joined_length(parts, policy) > policy.max_length:
+            continue
 
-    def next_separator():
-        nonlocal previous_separator
-        if not policy.symbols:
-            return ""
-        if not remaining_symbols:
-            remaining_symbols.extend(SYMBOLS)
-        candidates = [s for s in remaining_symbols if s != previous_separator]
-        separator = secrets.choice(candidates)
-        remaining_symbols.remove(separator)
-        previous_separator = separator
-        return separator
+        while joined_length(parts, policy) < policy.min_length or (
+            policy.mixed_case
+            and sum(c in string.ascii_lowercase for part in parts for c in part) < 2
+        ):
+            if len(parts) >= MAX_PARTS:
+                break
+            candidate_parts = parts + [stylize(secrets.choice(words_source), policy)]
+            if joined_length(candidate_parts, policy) > policy.max_length:
+                parts = []
+                break
+            parts = candidate_parts
+        if not parts:
+            continue
 
-    password = parts[0]
-    for part in parts[1:]:
-        password += next_separator() + part
-    while len(password) < policy.min_length or (
-        policy.mixed_case and sum(c in string.ascii_lowercase for c in password) < 2
-    ):
-        password += next_separator() + stylize(secrets.choice(dictionary()), policy)
-
-    if policy.mixed_case:
-        # Capitalize a random letter, keeping all other letters readable/lowercase.
-        indices = [i for i, c in enumerate(password) if c in string.ascii_lowercase]
-        i = secrets.choice(indices)
-        password = password[:i] + password[i].upper() + password[i + 1 :]
-    if not policy.accepts(password):
-        raise ValueError("generated password failed policy validation")
-    return password
+        password = join_parts(parts, policy)
+        if policy.mixed_case:
+            # Capitalize a random letter, keeping all other letters readable/lowercase.
+            indices = [i for i, c in enumerate(password) if c in string.ascii_lowercase]
+            if not indices:
+                continue
+            i = secrets.choice(indices)
+            password = password[:i] + password[i].upper() + password[i + 1 :]
+        if policy.accepts(password):
+            return password
+    raise ValueError(
+        "could not generate a password within these limits; increase max_length, "
+        "lower min_length, or adjust the word count"
+    )

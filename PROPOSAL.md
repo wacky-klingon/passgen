@@ -1,5 +1,7 @@
 # Proposal: passgen
 
+This is the original Python proposal and initial implementation record. Use the [current README](README.md) for supported behavior and the [design document](docs/DESIGN.md) / [feature sheet](docs/FEATURE_SHEET.md) for the planned generation and browser changes. The [changelog](changelog.md) tracks progress. Requirements below are historical where the newer design differs.
+
 ## Goal
 
 Build an open-source Python CLI and library that generates memorable passwords from either user-configured word sets or a bundled English word list.

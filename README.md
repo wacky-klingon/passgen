@@ -4,6 +4,8 @@ An offline Python desktop app, CLI, and library for memorable passwords, managed
 
 Status: initial implementation, with automated tests; not independently security-audited.
 
+The [design document](docs/DESIGN.md) and [feature sheet](docs/FEATURE_SHEET.md) describe the current P0 design and later planned work. Follow the [changelog](changelog.md) for progress.
+
 ## Browser version (initial implementation)
 
 A static HTML/JavaScript version now lives in [`web/`](web/README.md). Run it locally with Node.js 22.12+:
@@ -14,7 +16,7 @@ npm ci
 npm run dev
 ```
 
-It supports the same generation modes and requirements, local-only TOML import, and click-to-generate-and-copy. No backend or configuration editor. The Python app remains supported below. See the [browser documentation](web/README.md) for testing and GitHub Pages deployment; the site has not been published by this change.
+It supports the same generation modes and requirements, local-only TOML import, minimum/maximum character controls, a separate Generate button, and a Copy button inside the output card. Generation does not copy automatically. Active passwords show a character count and countdown, then move to masked Recent passwords after ten seconds or when replaced; the list keeps the latest 10, offers Copy and Show/Hide per row, and clears on refresh. No backend or configuration editor. The Python app remains supported below. See the [browser documentation](web/README.md) for testing and GitHub Pages deployment, or open the [browser app](https://wacky-klingon.github.io/passgen/).
 
 ## Quick start
 
@@ -29,7 +31,7 @@ uv run passgen
 # Open with configured sets and startup overrides
 uv run passgen --config examples/passgen.toml --use-sets --no-numbers
 
-# CLI: at least four English dictionary words
+# CLI: at least three English dictionary words
 uv run passgen generate
 
 # Recommended for sensitive use: six or more words
@@ -39,7 +41,7 @@ uv run passgen generate --no-sets --words 6
 uv run passgen generate --config examples/passgen.toml --use-sets
 
 # Bypass personal sets while retaining shared password settings
-uv run passgen generate --no-sets --min-length 24
+uv run passgen generate --no-sets --min-length 24 --max-length 64
 
 # Override requirements
 uv run passgen generate --mixed-case --numbers --symbols
@@ -50,7 +52,7 @@ Installation needs dependencies/build tooling; password generation itself makes 
 
 ## Desktop UI
 
-`uv run passgen` (or `uv run python -m passgen`) opens the Tkinter window. `passgen gui` also works. The three toggles enable/disable mixed case, numbers, and symbols for the next password. Choose English words or configured sets and adjust minimum length; word count is disabled in configured mode.
+`uv run passgen` (or `uv run python -m passgen`) opens the Tkinter window. `passgen gui` also works. The three toggles enable/disable mixed case, numbers, and symbols for the next password. Choose English words or configured sets and adjust minimum and maximum length; word count is disabled in configured mode.
 
 **Click the read-only password area to generate a new password and copy it to the clipboard.** With the area focused, Enter or Space does the same. Invalid settings are shown in the status line without replacing the previous password or clipboard. Clipboard failures are reported rather than claiming success. No password is generated or copied merely by opening the window or changing a setting.
 
@@ -67,6 +69,7 @@ Create `passgen.toml` in your working directory or select a file with `--config`
 ```toml
 [password]
 min_length = 16
+max_length = 64
 mixed_case = true
 numbers = true
 symbols = true
@@ -82,11 +85,11 @@ CLI flags override valid configuration values, which override defaults. No defau
 - `--use-sets` and `--no-sets` are mutually exclusive; dictionary mode is the default.
 - Configured mode selects exactly one entry from each set. Missing/empty sets are errors.
 - Spaces are removed from configured entries. Unsupported non-ASCII characters are rejected. Disabled digits/symbols are removed; entries that become empty are rejected.
-- Minimum length is a floor, from 1 to 4,096. Additional random dictionary words fill short results.
+- Minimum and maximum length define an inclusive character range from 1 to 128, with defaults of 16–64. Additional random dictionary words fill short results when they can still fit. Generation fails clearly rather than truncating, dropping requested words, or silently relaxing settings.
 - Enabled options guarantee both letter cases, at least one digit, and/or at least one symbol. Disabled options produce lowercase letters only, no digits, and/or no symbols, respectively.
 - Symbol alphabet: `!@#$%&*+-_=?`. Each join uses a randomly selected separator without reuse until the alphabet is exhausted. Longer passwords start a fresh pool, never repeating the previous separator. This applies to word joins and length-padding words. Symbols inside words (existing or substituted) are not separators and may repeat.
 - Both modes use light, randomized lookalike substitutions: `a → 4/@`, `b → 8`, `e → 3`, `g → 9`, `i → 1/!`, `l → 1`, `o → 0`, `s → 5/$`, `t → 7/+`, `z → 2`. Only enabled character types are used. There is no fixed numeric suffix: if a digit is still required, replace a random suitable letter or, if none exists, insert a digit at a random position. Existing digits already satisfy the requirement.
-- Dictionary mode uses 4–128 words (`--words`), adding more if needed for length. Configured mode does not accept a custom word count.
+- Dictionary mode uses at least 3–128 requested words (`--words`), adding more whole words if needed for length. Configured mode does not accept a custom word count.
 - CLI mode prints one password to stdout; errors and configured-mode security warnings go to stderr. The GUI displays these locally without printing passwords.
 
 ## Python API
@@ -94,9 +97,9 @@ CLI flags override valid configuration values, which override defaults. No defau
 ```python
 from passgen import Policy, generate
 
-password = generate(Policy(min_length=24), words=6)
+password = generate(Policy(min_length=24, max_length=64), words=6)
 password = generate(
-    Policy(min_length=20),
+    Policy(min_length=20, max_length=64),
     use_sets=True,
     sets={"people": ["Sam"], "places": ["New York"], "things": ["Guitar"]},
 )
@@ -104,9 +107,9 @@ password = generate(
 
 ## Security
 
-Random selections use Python's `secrets` module. There is no telemetry, password history, or password logging. Output can remain in terminal scrollback; store passwords in a password manager.
+Random selections use Python's `secrets` module or browser Web Crypto. There is no telemetry or password logging. The browser retains the latest 10 masked recent passwords in page memory until refresh; Python does not keep a password-history list. Output can remain in terminal scrollback; store passwords in a password manager.
 
-Personal names and places remain guessable despite substitutions. Prefer dictionary mode with **six or more words** for sensitive accounts. Four words are the agreed minimum, not a universal strength guarantee. Length and character variety alone do not establish security.
+Personal names and places remain guessable despite substitutions. Prefer dictionary mode with **six or more words** for sensitive accounts. Three words are the current implementation's usability default, not a universal strength guarantee. Length and character variety alone do not establish security.
 
 The bundled EFF long list contains 7,776 source words. Removing hyphens and deduplicating at runtime yields **7,775** uniformly selectable words. Casing and light substitutions are not presented as meaningful strength guarantees.
 
@@ -122,9 +125,14 @@ uv run ruff format --config pyproject.toml --check src tests
 uv build
 ```
 
-- [Proposal](PROPOSAL.md)
+- [Design and acceptance criteria](docs/DESIGN.md)
+- [Feature sheet](docs/FEATURE_SHEET.md)
+- [Changelog](changelog.md)
+- [Original proposal](PROPOSAL.md)
 - [Related GitHub projects](docs/RELATED_PROJECTS.md)
 - [Contributing](CONTRIBUTING.md)
+
+Update this README, the browser guide, security guidance, examples, and changelog alongside the implementation they describe. Keep proposed behavior labeled as planned until supported; see the [documentation maintenance contract](docs/DESIGN.md#documentation-maintenance).
 
 ## License
 
