@@ -2,7 +2,7 @@
 
 This initial implementation has not undergone an independent security audit.
 
-These notes describe current behavior. The [design document](docs/DESIGN.md), [feature sheet](docs/FEATURE_SHEET.md), and [changelog.md](changelog.md) distinguish implemented behavior from planned later work.
+These notes describe current behavior. The [design document](docs/DESIGN.md), [feature sheet](docs/FEATURE_SHEET.md), [0.1.0 release notes](docs/releases/0.1.0.md), and [changelog.md](changelog.md) distinguish implemented behavior from planned later work.
 
 - Python uses `secrets` for random choices; the browser app uses Web Crypto `getRandomValues()` with rejection sampling. Neither uses a fallback PRNG.
 - The static browser app loads assets from its host; generation itself makes no requests. Imported TXT files and pasted personal lists are read locally and kept in page memory, never uploaded or placed in browser storage. The packaged default TXT entries are public and must not contain private information.

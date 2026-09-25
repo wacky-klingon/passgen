@@ -2,7 +2,7 @@
 
 A static HTML/CSS/JavaScript version of passgen, alongside the existing Python app. Uses Vite and Web Crypto. No backend, frontend framework, or TOML parser.
 
-Open the [browser app](https://wacky-klingon.github.io/passgen/). The [design document](../docs/DESIGN.md), [feature sheet](../docs/FEATURE_SHEET.md), and [changelog](../changelog.md) track design and implementation progress. This guide describes current behavior in the repository checkout.
+Open the [browser app](https://wacky-klingon.github.io/passgen/). The [design document](../docs/DESIGN.md), [feature sheet](../docs/FEATURE_SHEET.md), [0.1.0 release notes](../docs/releases/0.1.0.md), and [changelog](../changelog.md) track design and implementation progress. This guide describes current behavior in the repository checkout.
 
 ## Run locally
 
@@ -31,7 +31,7 @@ Do not open `index.html` directly with a `file://` URL. Use localhost or HTTPS s
 - Name + Place + Thing mode selects exactly one entry from each set; word count is disabled in this mode.
 - Mixed-case, digit, and symbol requirements follow the Python implementation.
 - Independent random separators that may repeat, optional lookalike substitutions (off by default), random-position digit insertion when substitutions are off, and an Easy to type option that avoids introducing `0`, `1`, `I`, and `O`.
-- Use Generate password, then Generate another, to create values. Generation does not change the clipboard. Use the Copy button inside the output card to copy the current password; clipboard failures expose a selected read-only field for manual copying.
+- Use **Generate password** to create values. Generation does not change the clipboard. Use the Copy button inside the output card to copy the current password; clipboard failures expose a selected read-only field for manual copying.
 - Active output shows its character count and a countdown before moving to masked Recent passwords, or moves immediately when another password replaces it. Choose 10, 30, or 60 seconds for the next password. Recent passwords are newest-first, capped at the latest 10, and have Copy plus Show/Hide controls per entry. Refresh clears the page state.
 - Minimum characters and Maximum characters define the final-output range, defaulting to 16–64 with a ceiling of 128. Generation fails clearly rather than truncating, dropping requested words, or silently relaxing settings.
 - Policy controls are temporary. No localStorage, sessionStorage, database, analytics, external fonts, or CDN scripts.

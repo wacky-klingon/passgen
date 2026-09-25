@@ -2,7 +2,7 @@
 
 Date: 24 September 2026. Status: listed F02/F03/F04/F05/F07/F08/F09/F10/F11/F12 work implemented in this checkout.
 
-This document defines the changes summarized in the [feature sheet](FEATURE_SHEET.md). The [changelog](../changelog.md) records design and implementation progress separately. The [README](../README.md) and [browser guide](../web/README.md) describe current behavior until a feature is implemented and verified.
+This document defines the changes summarized in the [feature sheet](FEATURE_SHEET.md). The [changelog](../changelog.md) records design and implementation progress separately, and the [0.1.0 release notes](releases/0.1.0.md) summarize the initial release. The [README](../README.md) and [browser guide](../web/README.md) describe current behavior until a feature is implemented and verified.
 
 ## Scope and current baseline
 
@@ -154,7 +154,7 @@ Order the browser controls below its short introduction as follows:
 4. Settings summary and collapsed Change settings disclosure, including range controls and visible TXT/paste personal lists.
 5. Recent passwords, newest first, masked, and capped at the latest 10 entries.
 
-After the first successful generation, label the primary button Generate another and keep it in place, including after expiry. Refresh restores Generate password. Failed attempts do not change the label. A supporting icon cannot replace explicit text.
+Keep the primary button labeled Generate password and in place below the mode selector, including after successful generation and expiry. A supporting icon cannot replace explicit text.
 
 The output is not clickable for generation. Copy is a separate button inside a non-clickable card; no nested buttons. Copy has a visible label and accessible name, is disabled for empty output, and briefly shows Copied after confirmed success without shifting layout. Text selection or Copy never generates a replacement. Reserve space for long text and button feedback. No manual editing mode is included.
 
@@ -169,7 +169,7 @@ Keep transient state small: current generation ID/password/deadline, one active 
 | Event | Transition |
 |---|---|
 | Load | Empty output and Recent passwords; Copy disabled; no automatic generation. |
-| Successful generation | Allocate the next ID, display/count the value, start its deadline, and show Generate another. If replacing an active value, first move that prior generation to Recent passwords exactly once. |
+| Successful generation | Allocate the next ID, display/count the value, and start its deadline. If replacing an active value, first move that prior generation to Recent passwords exactly once. |
 | Expiry | Move the active generation once to masked Recent passwords, clear active/fallback text and character count, disable Copy, and show “Moved to recent passwords.” |
 | Generation failure | Show a safe error; retain the previous value and deadline, if any. |
 | Copy | Invoke only on explicit action; keep deadline unchanged. On confirmed success show Copied. On failure offer the selected read-only manual-copy field while the corresponding generation is active. |

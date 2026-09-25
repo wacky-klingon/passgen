@@ -2,7 +2,7 @@
 
 Date: 24 September 2026. Status: F02, F03, F04, F05, F07, F08, F09, F10, F11, and F12 implemented in this checkout.
 
-This is the maintained repository copy of the feature sheet developed in the design discussion. The [design document](DESIGN.md) defines implementation contracts and acceptance criteria. Track completed work in the [changelog](../changelog.md).
+This is the maintained repository copy of the feature sheet developed in the design discussion. The [design document](DESIGN.md) defines implementation contracts and acceptance criteria. Track completed work in the [changelog](../changelog.md) and [0.1.0 release notes](releases/0.1.0.md).
 
 ## Product direction
 
@@ -18,7 +18,7 @@ In the browser, expose the generation choice as **Wordlist** and **Name + Place 
 |---|---|---|---|
 | F02 | Implemented | Plain-language word information | Optional browser help shows requested word count and effective list size without a strength score. |
 | F03 | Implemented | Independent random separators | Every gap independently selects from the full allowed alphabet. Repeats are valid. |
-| F04 | P0 implemented | Generation-first layout and clear actions | Prominent Generate password changes to Generate another. Copy sits inside the output card’s upper-right corner. A settings summary and collapsed controls sit below the output and status. |
+| F04 | P0 implemented | Generation-first layout and clear actions | Prominent Generate password button sits below the mode selector. Copy sits inside the output card’s upper-right corner. A settings summary and collapsed controls sit below the output and status. |
 | F05 | P0 implemented | Ten-second output lifecycle | Explain expiry, move the value once to masked Recent passwords, keep the latest 10 recent entries, reset active output and fallback fields, and confirm the move. Refresh clears page state. |
 | F07 | Implemented | Expanded curated dictionary | 10,754 effective words from EFF and SCOWL sources, with manifest, license notices, and shared Python/browser vocabulary. |
 | F08 | Implemented | Optional substitutions | Explicit styling option, off by default. Required digits work without lookalike substitutions. No advertised entropy bonus. |
@@ -52,7 +52,7 @@ The browser labels dictionary generation as **Wordlist** and configured generati
 
 Generate sits above the output with at least 16 px separation. The output card is not clickable for generation. Copy and its Copied feedback have reserved space, visible text, accessible labels, and touch targets. Selecting output or tapping Copy never generates a replacement. Manual editing is outside this version.
 
-After the first successful generation, keep Generate another visible in the same position, including after expiry. Show a countdown such as “Moves to recent passwords in 10 seconds” independently of copy feedback, then “Moved to recent passwords.” Keep focus stable.
+Keep Generate password visible in the same position, including after expiry. Show a countdown such as “Moves to recent passwords in 10 seconds” independently of copy feedback, then “Moved to recent passwords.” Keep focus stable.
 
 Recent passwords are newest-first, masked, capped at the latest 10 entries, and labeled by generation order, such as Password 2. Each row starts with Copy, then Show/Hide, then the masked or revealed value. Keep the text “Shows the latest 10. Cleared when you refresh this page.” No separate history-management feature is required.
 
@@ -68,4 +68,4 @@ Three requested words favors usability. More independently selected words provid
 
 ## Delivery status
 
-The listed features are implemented in this checkout. F07's reproducible source manifest and notices are shipped with the data. See the [README](../README.md) for current usage and [changelog.md](../changelog.md) for validation. Deployment remains a separate release action.
+The listed features are implemented in this checkout. F07's reproducible source manifest and notices are shipped with the data. See the [README](../README.md) for current usage, [changelog.md](../changelog.md) for validation history, and [0.1.0 release notes](releases/0.1.0.md) for the initial release summary.

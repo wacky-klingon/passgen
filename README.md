@@ -4,7 +4,7 @@ An offline Python desktop app, CLI, and library for memorable passwords, managed
 
 Status: initial implementation, with automated tests; not independently security-audited.
 
-The [design document](docs/DESIGN.md) and [feature sheet](docs/FEATURE_SHEET.md) describe the implemented design. Follow the [changelog](changelog.md) for progress.
+The [design document](docs/DESIGN.md) and [feature sheet](docs/FEATURE_SHEET.md) describe the implemented design. See the [0.1.0 release notes](docs/releases/0.1.0.md) and [changelog](changelog.md) for release history.
 
 ## Browser version (initial implementation)
 
@@ -136,6 +136,7 @@ uv build
 
 - [Design and acceptance criteria](docs/DESIGN.md)
 - [Feature sheet](docs/FEATURE_SHEET.md)
+- [0.1.0 release notes](docs/releases/0.1.0.md)
 - [Changelog](changelog.md)
 - [Original proposal](PROPOSAL.md)
 - [Related GitHub projects](docs/RELATED_PROJECTS.md)
