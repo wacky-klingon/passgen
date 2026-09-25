@@ -4,6 +4,12 @@ Track design changes and implemented behavior separately. See the [design docume
 
 ## Unreleased
 
+### Implemented — 2026-09-24 (browser mode clarity)
+
+- Replaced the browser's mode dropdown with visible **Wordlist** and **Name + Place + Thing** choices near the main Generate flow. Wordlist remains the default.
+- Added compact source/count summaries, README and GitHub links, and explicit **Changes not applied** state for edited category text. Editing a list no longer implies a mode change; users choose the mode explicitly.
+- Updated the feature sheet, design document, root README, browser README, and browser tests for the implemented behavior.
+
 ### Implemented — 2026-09-24 (later design features)
 
 - Added packaged `names.txt`, `places.txt`, and `things.txt` defaults plus separate local TXT replacement inputs in the browser, CLI, and desktop app. The browser shows the default values in editable boxes. TOML was removed from the web and desktop GUI; legacy CLI-only TOML remains, with explicit TXT files overriding matching categories.

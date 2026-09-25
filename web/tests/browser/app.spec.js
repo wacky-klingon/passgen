@@ -13,7 +13,7 @@ test('generates without auto-copy and copies only on request, without network or
   await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
   await page.locator('#generate').click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('unchanged');
-  await expect(page.locator('#generate')).toHaveText('Generate another');
+  await expect(page.locator('#generate')).toHaveText('Generate password');
   await expect(page.locator('#output-meta')).toContainText(/^\d+ characters\. Moves to recent passwords in 10 seconds\.$/);
   await page.locator('#copy').click();
   await expect(page.locator('#status')).toContainText('Password copied');
@@ -37,16 +37,22 @@ test('default TXT lists are visible and ready for configured mode', async ({ pag
   await page.goto('./');
   await page.locator('main > details > summary').click();
   await expect(page.getByText('Local TOML configuration')).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: /Wordlist/ })).toBeChecked();
+  await expect(page.locator('#wordlist-summary')).toHaveText('wordlist.txt - 10,754 words - Built in');
+  await expect(page.getByRole('link', { name: 'How it works' })).toHaveAttribute('href', /github\.com\/wacky-klingon\/passgen#browser-version-initial-implementation/);
+  await expect(page.getByRole('link', { name: 'GitHub' }).first()).toHaveAttribute('href', 'https://github.com/wacky-klingon/passgen');
   await expect(page.locator('#people-paste')).toHaveValue('Sam\nAlex');
   await expect(page.locator('#places-paste')).toHaveValue('New York\nLondon');
   await expect(page.locator('#things-paste')).toHaveValue('Guitar\nCoffee');
-  await expect(page.locator('#people-status')).toContainText('2 usable names entries (default names.txt)');
+  await expect(page.locator('#people-status')).toHaveText('Names - 2 entries - Default list');
+  await expect(page.locator('#configured-summary')).toBeHidden();
   await page.locator('#min-length').fill('1');
   await page.locator('#mixed-case').uncheck();
   await page.locator('#numbers').uncheck();
   await page.locator('#symbols').uncheck();
-  await page.locator('#mode').selectOption('configured');
+  await page.getByRole('radio', { name: /Name \+ Place \+ Thing/ }).check();
   await expect(page.locator('#words')).toBeDisabled();
+  await expect(page.locator('#configured-summary')).toHaveText('Names - 2 entries - Default list | Places - 2 entries - Default list | Things - 2 entries - Default list');
   await page.locator('#generate').click();
   await expect(page.locator('#password')).toHaveValue(/^(sam|alex)(newyork|london)(guitar|coffee)$/);
 });
@@ -58,23 +64,38 @@ test('personal TXT files and pasted lists replace categories locally', async ({ 
   await page.locator('#mixed-case').uncheck();
   await page.locator('#numbers').uncheck();
   await page.locator('#symbols').uncheck();
-  await page.locator('#mode').selectOption('configured');
+  await page.getByRole('radio', { name: /Name \+ Place \+ Thing/ }).check();
   await page.locator('#people-file').setInputFiles({ name: 'names.txt', mimeType: 'text/plain', buffer: Buffer.from('Sam\nS am\n') });
-  await expect(page.locator('#people-status')).toContainText('1 usable names');
+  await expect(page.locator('#people-status')).toHaveText('Names - 1 entry - Your file');
   await page.locator('#places-paste').fill('New York\n');
+  await expect(page.locator('#places-status')).toHaveText('Places - Changes not applied');
+  await expect(page.getByRole('radio', { name: /Name \+ Place \+ Thing/ })).toBeChecked();
   await page.locator('#places-use-paste').click();
+  await expect(page.locator('#places-status')).toHaveText('Places - 1 entry - Edited');
   await page.locator('#things-file').setInputFiles({ name: 'things.txt', mimeType: 'text/plain', buffer: Buffer.from('Guitar\n') });
   await page.locator('#generate').click();
   await expect(page.locator('#password')).toHaveValue('samnewyorkguitar');
   await page.locator('#people-file').setInputFiles({ name: 'bad.txt', mimeType: 'text/plain', buffer: Buffer.from('Private東京') });
   await expect(page.locator('#list-status')).toContainText('invalid entry');
-  await expect(page.locator('#people-status')).toContainText('1 usable names');
+  await expect(page.locator('#people-status')).toHaveText('Names - 1 entry - Your file');
   await page.locator('#people-clear').click();
   await page.locator('#generate').click();
   await expect(page.locator('#status')).toContainText('Add a names list');
   await page.reload();
   await page.locator('main > details > summary').click();
-  await expect(page.locator('#people-status')).toContainText('2 usable names entries (default names.txt)');
+  await expect(page.locator('#people-status')).toHaveText('Names - 2 entries - Default list');
+});
+
+test('editing personal lists does not change the selected mode until the user switches it', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('main > details > summary').click();
+  await page.locator('#people-paste').fill('Jordan');
+  await expect(page.locator('#people-status')).toHaveText('Names - Changes not applied');
+  await expect(page.getByRole('radio', { name: /Wordlist/ })).toBeChecked();
+  await page.locator('#people-use-paste').click();
+  await expect(page.locator('#people-status')).toHaveText('Names - 1 entry - Edited');
+  await expect(page.getByRole('radio', { name: /Wordlist/ })).toBeChecked();
+  await expect(page.locator('#words')).toBeEnabled();
 });
 
 test('word information and longer visibility option describe the next generation', async ({ page }) => {

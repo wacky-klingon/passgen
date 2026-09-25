@@ -9,6 +9,33 @@
 <body>
   <main>
     <header><h1>passgen</h1><p>Memorable passwords. Generated in your browser.</p></header>
+    <section class="mode-panel" aria-labelledby="mode-title">
+      <div class="mode-panel-heading">
+        <h2 id="mode-title">Generation mode</h2>
+        <nav aria-label="Passgen documentation">
+          <a href="https://github.com/wacky-klingon/passgen#browser-version-initial-implementation">How it works</a>
+          <a href="https://github.com/wacky-klingon/passgen">GitHub</a>
+        </nav>
+      </div>
+      <div class="mode-choices" role="radiogroup" aria-labelledby="mode-title">
+        <label class="mode-choice">
+          <input id="mode-dictionary" name="mode" type="radio" value="dictionary" checked>
+          <span>
+            <strong>Wordlist</strong>
+            <span>Choose random words.</span>
+          </span>
+        </label>
+        <label class="mode-choice">
+          <input id="mode-configured" name="mode" type="radio" value="configured">
+          <span>
+            <strong>Name + Place + Thing</strong>
+            <span>Build a memorable combination.</span>
+          </span>
+        </label>
+      </div>
+      <div id="wordlist-summary" class="mode-summary"></div>
+      <div id="configured-summary" class="mode-summary" hidden></div>
+    </section>
     <button id="generate" class="primary" type="button">Generate password</button>
     <div class="output-card" aria-labelledby="output-title">
       <label id="output-title" for="password">Password</label>
@@ -32,9 +59,6 @@
         <p id="requirements-note">Unchecked classes are excluded from generated passwords.</p>
       </fieldset>
       <div class="options">
-        <label>Mode
-          <select id="mode"><option value="dictionary">English words</option><option value="configured">Configured sets</option></select>
-        </label>
         <label>Minimum characters <input id="min-length" type="number" min="1" max="128" value="16" required></label>
         <label>Maximum characters <input id="max-length" type="number" min="1" max="128" value="64" required></label>
         <label>Words <input id="words" type="number" min="3" max="128" value="3" required></label>
@@ -44,32 +68,32 @@
       </div>
       <p id="mode-note"></p>
       <details id="word-info"><summary>About word selection</summary><p id="word-info-text"></p></details>
-      <h2>Personal lists</h2>
-      <p>Default TXT entries are loaded below. Edit or replace them for configured mode. Files stay on this page. One entry per line.</p>
+      <h2>Name + Place + Thing lists</h2>
+      <p>Default TXT entries are loaded below. Edit or replace them for Name + Place + Thing mode. Files stay on this page. One entry per line.</p>
       <div class="list-options">
         <fieldset><legend>Names</legend>
           <label>Select names.txt <input id="people-file" type="file" accept=".txt,text/plain"></label>
           <label>Or edit names <textarea id="people-paste" rows="3" spellcheck="false">Sam
 Alex</textarea></label>
-          <button id="people-use-paste" type="button">Use edited names</button>
+          <button id="people-use-paste" type="button">Apply names</button>
           <button id="people-clear" type="button">Clear names</button>
-          <p id="people-status">2 usable names entries (default names.txt).</p>
+          <p id="people-status">Names - 2 entries - Default list</p>
         </fieldset>
         <fieldset><legend>Places</legend>
           <label>Select places.txt <input id="places-file" type="file" accept=".txt,text/plain"></label>
           <label>Or edit places <textarea id="places-paste" rows="3" spellcheck="false">New York
 London</textarea></label>
-          <button id="places-use-paste" type="button">Use edited places</button>
+          <button id="places-use-paste" type="button">Apply places</button>
           <button id="places-clear" type="button">Clear places</button>
-          <p id="places-status">2 usable places entries (default places.txt).</p>
+          <p id="places-status">Places - 2 entries - Default list</p>
         </fieldset>
         <fieldset><legend>Things</legend>
           <label>Select things.txt <input id="things-file" type="file" accept=".txt,text/plain"></label>
           <label>Or edit things <textarea id="things-paste" rows="3" spellcheck="false">Guitar
 Coffee</textarea></label>
-          <button id="things-use-paste" type="button">Use edited things</button>
+          <button id="things-use-paste" type="button">Apply things</button>
           <button id="things-clear" type="button">Clear things</button>
-          <p id="things-status">2 usable things entries (default things.txt).</p>
+          <p id="things-status">Things - 2 entries - Default list</p>
         </fieldset>
       </div>
       <p id="list-status" role="status">Default TXT lists loaded.</p>
@@ -81,7 +105,7 @@ Coffee</textarea></label>
     </section>
     <footer>
       <p>New passwords move to Recent passwords after <span id="footer-duration">10 seconds</span>. Recent passwords show the latest 10. Refresh clears this page’s passwords. Copied passwords may remain in clipboard history. No analytics, storage, or password uploads.</p>
-      <p>Code: <a href="./LICENSE.txt">MIT</a> · Words: <a href="./WORDLIST_LICENSE.txt">sources and licenses</a> · <a href="./SCOWL_COPYRIGHT.txt">SCOWL notice</a> · <a href="./WORDLIST_MANIFEST.json">word-list manifest</a></p>
+      <p>Code: <a href="https://github.com/wacky-klingon/passgen">GitHub</a> · <a href="./LICENSE.txt">MIT</a> · Words: <a href="./WORDLIST_LICENSE.txt">sources and licenses</a> · <a href="./SCOWL_COPYRIGHT.txt">SCOWL notice</a> · <a href="./WORDLIST_MANIFEST.json">word-list manifest</a></p>
     </footer>
     <noscript>JavaScript is required for local password generation.</noscript>
   </main>

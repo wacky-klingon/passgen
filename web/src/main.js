@@ -11,6 +11,7 @@ import { DEFAULT_POLICY } from './policy.js';
 const DEFAULT_DISPLAY_SECONDS = 10;
 const RECENT_LIMIT = 10;
 const CATEGORIES = { people: 'names', places: 'places', things: 'things' };
+const CATEGORY_TITLES = { people: 'Names', places: 'Places', things: 'Things' };
 const DEFAULT_LISTS = {
   people: { filename: 'names.txt', text: defaultNames },
   places: { filename: 'places.txt', text: defaultPlaces },
@@ -22,7 +23,8 @@ const dictionary = parseDictionary(wordlist);
 let sets = Object.fromEntries(Object.entries(DEFAULT_LISTS).map(([category, value]) =>
   [category, parsePersonalList(value.text, CATEGORIES[category], DEFAULT_POLICY)]));
 let listSources = Object.fromEntries(Object.entries(DEFAULT_LISTS).map(([category, value]) =>
-  [category, `default ${value.filename}`]));
+  [category, 'Default list']));
+let listDirty = { people: false, places: false, things: false };
 let listVersions = { people: 0, places: 0, things: 0 };
 let outputVersion = 0;
 let generationCounter = 0;
@@ -34,6 +36,10 @@ let copying = false;
 
 for (const [category, value] of Object.entries(DEFAULT_LISTS)) {
   get(`${category}-paste`).value = value.text.trim();
+}
+
+function currentMode() {
+  return get('mode-configured').checked ? 'configured' : 'dictionary';
 }
 
 function policyFromControls() {
@@ -48,20 +54,32 @@ function policyFromControls() {
   };
 }
 
-function renderPersonalStatuses() {
-  for (const [category, label] of Object.entries(CATEGORIES)) {
-    const entries = sets?.[category];
-    if (!Array.isArray(entries) || !entries.length) {
-      get(`${category}-status`).textContent = `No ${label} loaded.`;
-      continue;
-    }
-    try {
-      const count = usableCount(entries, policyFromControls());
-      get(`${category}-status`).textContent = `${count} usable ${label} entries (${listSources[category] ?? 'local TXT'}).`;
-    } catch {
-      get(`${category}-status`).textContent = `${label} list needs review for these settings.`;
-    }
+function categorySummary(category) {
+  const title = CATEGORY_TITLES[category];
+  if (listDirty[category]) return `${title} - Changes not applied`;
+  const entries = sets?.[category];
+  if (!Array.isArray(entries) || !entries.length) return `${title} - No list loaded`;
+  try {
+    const count = usableCount(entries, policyFromControls());
+    return `${title} - ${count} ${count === 1 ? 'entry' : 'entries'} - ${listSources[category] ?? 'Local TXT'}`;
+  } catch {
+    return `${title} - Needs review`;
   }
+}
+
+function updateModeSummaries() {
+  get('wordlist-summary').textContent = `wordlist.txt - ${dictionary.length.toLocaleString()} words - Built in`;
+  get('configured-summary').textContent = ['people', 'places', 'things'].map(categorySummary).join(' | ');
+  const configured = currentMode() === 'configured';
+  get('wordlist-summary').hidden = configured;
+  get('configured-summary').hidden = !configured;
+}
+
+function renderPersonalStatuses() {
+  for (const category of Object.keys(CATEGORIES)) {
+    get(`${category}-status`).textContent = categorySummary(category);
+  }
+  updateModeSummaries();
 }
 
 function updateWordInfo() {
@@ -70,7 +88,7 @@ function updateWordInfo() {
 }
 
 function updateSettingsSummary() {
-  const mode = get('mode').value === 'configured' ? 'configured sets' : `at least ${get('words').value} words`;
+  const mode = currentMode() === 'configured' ? 'Name + Place + Thing' : `at least ${get('words').value} words`;
   const requirements = [
     get('mixed-case').checked ? 'mixed case' : 'lowercase only',
     get('numbers').checked ? 'numbers' : 'no numbers',
@@ -159,7 +177,6 @@ function setActive(entry) {
   get('copy-text').value = '';
   get('copy').textContent = 'Copy';
   get('copy').disabled = copying;
-  get('generate').textContent = 'Generate another';
   clearTimer();
   updateCountdown();
   countdownTimer = setInterval(updateCountdown, 1000);
@@ -204,14 +221,15 @@ function resetPageState() {
     ++listVersions[category];
     const defaults = DEFAULT_LISTS[category];
     sets[category] = parsePersonalList(defaults.text, CATEGORIES[category], DEFAULT_POLICY);
-    listSources[category] = `default ${defaults.filename}`;
+    listSources[category] = 'Default list';
+    listDirty[category] = false;
     get(`${category}-file`).value = '';
     get(`${category}-paste`).value = defaults.text.trim();
   }
   get('list-status').textContent = 'Default TXT lists restored.';
   applyPolicy(DEFAULT_POLICY);
   get('words').value = 3;
-  get('mode').value = 'dictionary';
+  get('mode-dictionary').checked = true;
   get('display-duration').value = String(DEFAULT_DISPLAY_SECONDS);
   get('footer-duration').textContent = `${DEFAULT_DISPLAY_SECONDS} seconds`;
   updateMode();
@@ -219,7 +237,6 @@ function resetPageState() {
   clearActive('Ready.');
   recentEntries = [];
   renderRecent();
-  get('generate').textContent = 'Generate password';
 }
 
 function applyPolicy(policy) {
@@ -234,10 +251,10 @@ function applyPolicy(policy) {
 }
 
 function updateMode() {
-  const configured = get('mode').value === 'configured';
+  const configured = currentMode() === 'configured';
   get('words').disabled = configured;
   get('mode-note').textContent = configured
-    ? 'Personal words are guessable. Selects one name, one place and one thing from your lists.'
+    ? 'Names, places, and things can be guessable. This mode selects one entry from each list.'
     : 'More requested words increase guessing resistance when the selected length range can fit them.';
   updateSettingsSummary();
 }
@@ -246,25 +263,32 @@ get('display-duration').addEventListener('change', () => {
   get('footer-duration').textContent = `${get('display-duration').value} seconds`;
 });
 
-for (const id of ['mode', 'words', 'min-length', 'max-length', 'mixed-case', 'numbers', 'symbols', 'substitutions', 'easy-to-type']) {
+for (const id of ['words', 'min-length', 'max-length', 'mixed-case', 'numbers', 'symbols', 'substitutions', 'easy-to-type']) {
   get(id).addEventListener('change', updateSettingsSummary);
   get(id).addEventListener('input', updateSettingsSummary);
 }
-get('mode').addEventListener('change', updateMode);
+for (const id of ['mode-dictionary', 'mode-configured']) {
+  get(id).addEventListener('change', updateMode);
+}
 updateMode();
 
 function replaceCategory(category, text, source) {
   const entries = parsePersonalList(text, CATEGORIES[category], policyFromControls());
   sets = { ...(sets && typeof sets === 'object' && !Array.isArray(sets) ? sets : {}), [category]: entries };
   listSources[category] = source;
-  renderPersonalStatuses();
 }
 
 for (const [category, label] of Object.entries(CATEGORIES)) {
+  get(`${category}-paste`).addEventListener('input', () => {
+    listDirty[category] = true;
+    renderPersonalStatuses();
+  });
   get(`${category}-use-paste`).addEventListener('click', () => {
     try {
       ++listVersions[category];
-      replaceCategory(category, get(`${category}-paste`).value, 'pasted');
+      replaceCategory(category, get(`${category}-paste`).value, 'Edited');
+      listDirty[category] = false;
+      renderPersonalStatuses();
       get('list-status').textContent = `Edited ${label} loaded locally.`;
     } catch (error) {
       get('list-status').textContent = error.message;
@@ -279,8 +303,10 @@ for (const [category, label] of Object.entries(CATEGORIES)) {
       let text;
       try { text = await file.text(); } catch { throw new Error(`Could not read ${label} list.`); }
       if (version !== listVersions[category]) return;
-      replaceCategory(category, text, file.name);
+      replaceCategory(category, text, 'Your file');
+      listDirty[category] = false;
       get(`${category}-paste`).value = text.trim();
+      renderPersonalStatuses();
       get('list-status').textContent = `${label} list loaded locally.`;
     } catch (error) {
       if (version === listVersions[category]) get('list-status').textContent = error.message;
@@ -292,6 +318,7 @@ for (const [category, label] of Object.entries(CATEGORIES)) {
     ++listVersions[category];
     if (sets && typeof sets === 'object') delete sets[category];
     delete listSources[category];
+    listDirty[category] = false;
     get(`${category}-paste`).value = '';
     get(`${category}-file`).value = '';
     renderPersonalStatuses();
@@ -301,7 +328,7 @@ for (const [category, label] of Object.entries(CATEGORIES)) {
 
 get('generate').addEventListener('click', () => {
   reconcileDeadline();
-  const useSets = get('mode').value === 'configured';
+  const useSets = currentMode() === 'configured';
   let password;
   try {
     if (useSets) {

@@ -26,8 +26,9 @@ Do not open `index.html` directly with a `file://` URL. Use localhost or HTTPS s
 ## Features
 
 - Dictionary generation defaults to at least three requested words; choose six or more for sensitive accounts when the selected character range can fit them.
+- The main browser flow has two visible modes: **Wordlist** and **Name + Place + Thing**. Wordlist is the default. Editing a personal list does not switch modes until you choose Name + Place + Thing.
 - Packaged `names.txt`, `places.txt`, and `things.txt` defaults are visible on load. Each category can be edited, pasted, replaced with a local TXT file, or cleared independently. Inputs stay in page memory, with no upload or file edits. TOML is not part of the browser interface.
-- Configured mode selects exactly one entry from each set; word count is disabled in this mode.
+- Name + Place + Thing mode selects exactly one entry from each set; word count is disabled in this mode.
 - Mixed-case, digit, and symbol requirements follow the Python implementation.
 - Independent random separators that may repeat, optional lookalike substitutions (off by default), random-position digit insertion when substitutions are off, and an Easy to type option that avoids introducing `0`, `1`, `I`, and `O`.
 - Use Generate password, then Generate another, to create values. Generation does not change the clipboard. Use the Copy button inside the output card to copy the current password; clipboard failures expose a selected read-only field for manual copying.
@@ -36,6 +37,7 @@ Do not open `index.html` directly with a `file://` URL. Use localhost or HTTPS s
 - Policy controls are temporary. No localStorage, sessionStorage, database, analytics, external fonts, or CDN scripts.
 - Refresh discards pasted or imported personal lists, restores the packaged TXT defaults, and clears active and recent passwords. It does not erase clipboard history or guarantee secure erasure from browser memory.
 - About word selection shows the requested count and the effective bundled list size. The length range affects which combinations can be returned, so this is not a strength score.
+- The **How it works** link points to the user guide on the repository main branch. The **GitHub** link points to the source repository.
 
 The dictionary and default personal lists are imported directly from `../src/passgen/data/` at build time. Dictionary normalization removes hyphens and deduplicates, yielding 10,754 selectable words. See the [source manifest](../src/passgen/data/WORDLIST_MANIFEST.json).
 

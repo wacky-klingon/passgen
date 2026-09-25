@@ -10,6 +10,8 @@ Put generation first: **generate → inspect → copy or generate another**. Kee
 
 Dictionary mode supports 3–128 requested words and defaults to three. A separate character range controls the entire final password. Defaults are **16–64 characters**, with an application ceiling of **128 characters**. Word counts that cannot fit the range produce a clear error; the generator never truncates, drops requested words, or silently relaxes settings.
 
+In the browser, expose the generation choice as **Wordlist** and **Name + Place + Thing** near the main Generate flow. Wordlist stays the default. The Name + Place + Thing summaries show each category's count and source, and edited text is marked as unapplied until the user applies that category.
+
 ## Features
 
 | ID | Priority | Feature | Required result |
@@ -24,6 +26,7 @@ Dictionary mode supports 3–128 requested words and defaults to three. A separa
 | F10 | P0 implemented, ongoing | Secure independent generation | Preserve Python secrets and browser Web Crypto. Fail closed on RNG errors; do not derive passwords from predictable inputs, history, or prior passwords. |
 | F11 | P0 implemented | Minimum and maximum password length | Enforce an inclusive character range in every generator and interface. Default 16–64; hard ceiling 128; bounded attempts; explicit failures without truncation. |
 | F12 | Implemented | Plain-text personal lists | People, Places, and Things start with visible packaged TXT defaults. The web and desktop interfaces replace lists with `.txt` files; the browser also accepts pasted edits. TOML is absent from both interfaces. |
+| F13 | Implemented | Clear browser mode selector | Browser shows Wordlist and Name + Place + Thing as visible choices with source/count summaries, documentation links, and explicit unapplied-edit state. Editing lists does not switch modes. |
 
 ## Defaults and controls
 
@@ -42,6 +45,8 @@ Show Minimum characters and Maximum characters together inside Change settings. 
 The requested word count is a starting minimum, not an exact count. Whole dictionary words may be appended to satisfy the character minimum, provided the final result fits the maximum. Configured mode still selects one person, one place, and one thing; it does not inherit dictionary-strength claims.
 
 F12 uses one-entry-per-line `names.txt`, `places.txt`, and `things.txt` files. Packaged defaults are loaded and displayed by the web and desktop interfaces. The browser offers file pickers and editable paste boxes under Change settings, displays usable entry counts, and keeps replacements in page memory. A cleared category blocks configured generation with a clear error. Dictionary mode uses the bundled `wordlist.txt`. TOML remains only as legacy CLI compatibility; it is not shown or loaded by either UI. Python has `--people-file`, `--places-file`, and `--things-file`. See [F12 in the design](DESIGN.md#f12-plain-text-personal-lists) for replacement and validation rules.
+
+The browser labels dictionary generation as **Wordlist** and configured generation as **Name + Place + Thing**. The mode selector includes concise descriptions, a visible selected state, a **How it works** link to the README, and a **GitHub** source link. Category summaries use short source/count text such as `Names - 24 entries - Your file` or `Names - Changes not applied`.
 
 ## UI and lifecycle
 

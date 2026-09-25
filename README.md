@@ -18,6 +18,8 @@ npm run dev
 
 It starts with visible default Names, Places, and Things entries. Each list can be edited, pasted, or replaced with a local TXT file; there is no TOML control. Generate and Copy are separate. Active passwords show a character count and countdown, then move to masked Recent passwords after the selected 10, 30, or 60 seconds or when replaced. The latest 10 recent entries offer Copy and Show/Hide; refresh clears passwords and restores the default lists. See the [browser documentation](web/README.md) for testing and GitHub Pages deployment, or open the [browser app](https://wacky-klingon.github.io/passgen/).
 
+The browser exposes two main modes: **Wordlist** and **Name + Place + Thing**. Wordlist remains the default. Editing list text marks that category as unapplied until you use the matching Apply button, and editing a list does not switch the selected mode.
+
 ## Quick start
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). From this repository:

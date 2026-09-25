@@ -107,9 +107,9 @@ Password requirements, word count, and character limits remain controls. TXT is 
 
 Acceptance checks: packaged defaults are visible and immediately usable in both UIs; each valid TXT file and pasted list produces the same normalized category; missing categories block configured generation; an invalid replacement leaves the previous valid category unchanged and does not leak an entry in an error; duplicate normalized entries do not change selection weights; file replacement, clearing, and refresh have predictable state transitions; no TOML control or browser parser remains; Python and browser generation still use secure randomness and the existing length bounds. Verify no replacement list appears in network requests, browser storage, logs, or URLs.
 
-## Proposed mode-selection refinement
+## F13: browser mode-selection refinement
 
-This section records design direction only. It is not implemented until a later authorized change updates the browser or desktop UI.
+This section describes implemented browser behavior. The desktop GUI still uses its existing simpler mode control.
 
 The current browser mode names distinguish the shared dictionary from configured personal lists, but the difference can be made more visible and less developer-oriented. Use a compact two-option mode selector near the main Generate flow:
 
@@ -122,9 +122,9 @@ Prefer **Name + Place + Thing** over **Configured Sets** for user-facing copy. I
 
 Keep **Wordlist** as the initial default while the bundled Name/Place/Thing defaults are intentionally tiny. Public defaults are acceptable for demonstration because the dictionary is public too, but the tiny category counts make this mode easy to guess if users do not replace them. If a future release makes Name + Place + Thing the default, first expand the bundled category files enough that the default mode is not built from only a few starting combinations.
 
-Do not silently switch modes when the user edits a category. Editing `names.txt`, `places.txt`, or `things.txt` should update that category and its source summary; the user should still explicitly choose Name + Place + Thing before generation uses those sets. Silent switching would make the next password harder to reason about.
+Do not silently switch modes when the user edits a category. Editing `names.txt`, `places.txt`, or `things.txt` updates that category's unapplied state and source summary; the user still explicitly chooses Name + Place + Thing before generation uses those sets. Silent switching would make the next password harder to reason about.
 
-Display only the settings relevant to the selected mode in the compact area near Generate. Wordlist needs requested word count, character range, and requirement summary. Name + Place + Thing needs the three category summaries plus a clear Edit lists action. Shared requirements such as character range, numbers, symbols, mixed case, substitutions, and Easy to type remain available below in Change settings.
+Display the relevant source summary for the selected mode in the compact area near Generate. Wordlist shows the bundled wordlist size. Name + Place + Thing shows the three category summaries. Shared requirements such as character range, numbers, symbols, mixed case, substitutions, and Easy to type remain available below in Change settings.
 
 Represent list state with short source/count summaries rather than paragraphs. Examples:
 
@@ -135,14 +135,14 @@ Represent list state with short source/count summaries rather than paragraphs. E
 
 If the browser text area has edits that have not been applied, show **Changes not applied** next to that category and keep generation on the last valid applied list. The action should be explicit: **Apply names**, **Apply places**, or **Apply things**. A failed apply keeps the previous valid list and does not echo private entries.
 
-Documentation links should help users understand list formats without turning the app into a documentation page. Add a small **How it works** link near the mode selector that opens the relevant README section on the repository main branch, and keep a separate **GitHub** link in the footer for source code. Avoid linking ordinary users directly to this design document from the product UI; this file is a maintainer contract, while README content is the user guide.
+Documentation links help users understand list formats without turning the app into a documentation page. A small **How it works** link near the mode selector opens the relevant README section on the repository main branch, and **GitHub** links point to the source repository. Avoid linking ordinary users directly to this design document from the product UI; this file is a maintainer contract, while README content is the user guide.
 
 Use concise labels and a visible selected state instead of promotional badges. A border, checkmark, or segmented-control selection is enough. Suggested copy:
 
 - **Wordlist**: "Choose random words."
 - **Name + Place + Thing**: "Build a memorable combination."
 
-Before implementing this refinement, update the feature sheet and README wording in the same change. Browser tests should cover the selected default, explicit mode switching, source/count text, unapplied edits, README/GitHub link targets, and that editing a category does not change the selected generation mode.
+Browser tests cover the selected default, explicit mode switching, source/count text, unapplied edits, README/GitHub link targets, and that editing a category does not change the selected generation mode.
 
 ## F04: browser layout
 
